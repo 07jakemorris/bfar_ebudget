@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Budget Reports — BFAR E-Budget</title>
+  <link rel="stylesheet" href="/css/bfar-style.css" />
+  <link rel="stylesheet" href="/css/pages.css" />
+  <style>
+    /* ── Search dropdown ── */
+    .search-wrap { position: relative; }
+    .search-dropdown {
+      display: none;
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: #fff;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 30px rgba(10,61,74,0.20);
+      z-index: 9999;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .search-dropdown.open { display: block; }
+    #filter-card { overflow: visible !important; position: relative; z-index: 100; }
+    #filter-card .card-body { overflow: visible; }
+    .dd-item {
+      padding: 9px 14px; font-size: 13px; color: var(--text-primary);
+      cursor: pointer; border-bottom: 1px solid var(--border);
+      transition: background 0.12s;
+    }
+    .dd-item:last-child { border-bottom: none; }
+    .dd-item:hover { background: var(--accent-light); color: var(--accent-dark); }
+    .dd-item.all-option { color: var(--text-secondary); font-style: italic; }
+    .dd-item mark { background: var(--accent-light); color: var(--accent-dark); font-weight: 700; border-radius: 2px; padding: 0 1px; }
+
+    /* ── Summary stat cards ── */
+    .report-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+    .rstat { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; }
+    .rstat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .rstat.teal::before  { background: var(--accent); }
+    .rstat.green::before { background: var(--success); }
+    .rstat.blue::before  { background: var(--info); }
+    .rstat.amber::before { background: var(--warning); }
+    .rstat.red::before   { background: var(--danger); }
+    .rstat-label { font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+    .rstat-value { font-size: 19px; font-weight: 800; color: var(--text-primary); }
+    .rstat-sub   { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Active filter tags ── */
+    .filter-active-tag { display: inline-flex; align-items: center; gap: 5px; background: var(--accent-light); color: var(--accent-dark); font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px; margin-right: 6px; margin-bottom: 6px; }
+    .filter-active-tag button { background: none; border: none; cursor: pointer; color: var(--accent-dark); font-size: 13px; line-height: 1; padding: 0 0 0 2px; }
+
+    /* ════════════════════════════════════════
+       TREE REPORT TABLE
+       ════════════════════════════════════════ */
+    .tree-table-wrap { overflow-x: auto; }
+    .tree-table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 980px; }
+    .tree-table thead th {
+      background: linear-gradient(180deg, #8a4a1f, #6b3414);
+      color: #fff;
+      padding: 10px 12px;
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      text-align: right;
+      border: 1px solid #5c2c10;
+      white-space: nowrap;
+    }
+    .tree-table thead th:first-child { text-align: left; }
+    .tree-table thead .group-row th { text-align: center; background: linear-gradient(180deg, #7a3f1a, #5c2c10); }
+
+    .tree-table td {
+      padding: 7px 12px;
+      text-align: right;
+      border: 1px solid #f0ddc8;
+      white-space: nowrap;
+      color: var(--text-primary);
+    }
+    .tree-table td:first-child {
+      text-align: left;
+      white-space: normal;
+    }
+
+    /* Hierarchy levels — fund chain (deepening orange tints) */
+    .lvl-fund-cluster  td { background: #fde8d2; font-weight: 800; }
+    .lvl-financing     td { background: #fbdcb8; font-weight: 700; }
+    .lvl-authorization td { background: #f9d09e; font-weight: 700; }
+    .lvl-fund-category td { background: #f5b87a; font-weight: 800; border-top: 2px solid #c97a2e; border-bottom: 2px solid #c97a2e; }
+
+    /* Hierarchy levels — expense chain (cool tints, nested under fund category) */
+    .lvl-expense-class td { background: #e8f4f8; font-weight: 700; color: #0a3d4a; }
+    .lvl-account-code  td { background: #ffffff; font-weight: 400; }
+    .lvl-account-code td:first-child { padding-left: 2.5rem; color: var(--text-secondary); }
+
+    .tree-indent-1 { padding-left: 1.25rem !important; }
+    .tree-indent-2 { padding-left: 2rem !important; }
+    .tree-indent-3 { padding-left: 2.75rem !important; }
+    .tree-indent-4 { padding-left: 3.5rem !important; }
+
+    .toggle-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 16px; height: 16px;
+      border: none; background: rgba(0,0,0,0.08); border-radius: 3px;
+      cursor: pointer; margin-right: 6px; font-size: 10px;
+      color: inherit; flex-shrink: 0; vertical-align: -2px;
+      transition: transform 0.15s;
+    }
+    .toggle-btn.collapsed { transform: rotate(-90deg); }
+    .tree-row.hidden-row { display: none; }
+
+    .no-data-row td { text-align: center; color: var(--text-muted); padding: 2.5rem; font-size: 13px; border: none; }
+  </style>
+</head>
+<body>
+
+  <div id="sidebar-root"></div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title"></div>
+        <div class="topbar-sub"   id="topbar-sub"></div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-date" id="topbar-date"></div>
+        <div class="avatar">AD</div>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <div class="page-header">
+        <div>
+          <h1>Budget Reports</h1>
+          <p>Summary of Appropriations, Allotments, Obligations, Disbursements and Balances By Object of Expenditures</p>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn" onclick="clearFilters()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Clear Filters
+          </button>
+          <button class="btn" onclick="toggleAllRows()" id="expand-toggle-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            Expand All
+          </button>
+          <button class="btn btn-primary" onclick="exportCSV()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="card mb-3" id="filter-card">
+        <div class="card-header">
+          <h2>Filters</h2>
+          <div id="active-filters"></div>
+        </div>
+        <div class="card-body">
+          <div class="form-grid">
+
+            <!-- Fund Category -->
+            <div class="field-group">
+              <label>Fund Category</label>
+              <div class="search-wrap">
+                <input type="text" id="fund-search" placeholder="Search Fund Category…"
+                  autocomplete="off"
+                  oninput="searchFilter('fund', this.value)"
+                  onfocus="openDropdown('fund')"
+                  onblur="closeDropdown('fund')" />
+                <div class="search-dropdown" id="fund-dropdown"></div>
+              </div>
+              <input type="hidden" id="fund-id" value="all" />
+            </div>
+
+            <!-- Responsibility Center -->
+            <div class="field-group">
+              <label>Responsibility Center</label>
+              <div class="search-wrap">
+                <input type="text" id="rc-search" placeholder="Search RC…"
+                  autocomplete="off"
+                  oninput="searchFilter('rc', this.value)"
+                  onfocus="openDropdown('rc')"
+                  onblur="closeDropdown('rc')" />
+                <div class="search-dropdown" id="rc-dropdown"></div>
+              </div>
+              <input type="hidden" id="rc-id" value="all" />
+            </div>
+
+            <!-- Expense Class -->
+            <div class="field-group">
+              <label>Expense Class</label>
+              <div class="search-wrap">
+                <input type="text" id="class-search" placeholder="Search Expense Class…"
+                  autocomplete="off"
+                  oninput="searchFilter('class', this.value)"
+                  onfocus="openDropdown('class')"
+                  onblur="closeDropdown('class')" />
+                <div class="search-dropdown" id="class-dropdown"></div>
+              </div>
+              <input type="hidden" id="class-id" value="all" />
+            </div>
+
+            <!-- Fiscal Year -->
+            <div class="field-group">
+              <label>Fiscal Year</label>
+              <div class="search-wrap">
+                <input type="text" id="fy-search" placeholder="Search Year…"
+                  autocomplete="off"
+                  oninput="searchFilter('fy', this.value)"
+                  onfocus="openDropdown('fy')"
+                  onblur="closeDropdown('fy')" />
+                <div class="search-dropdown" id="fy-dropdown"></div>
+              </div>
+              <input type="hidden" id="fy-val" value="all" />
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary Stat Cards -->
+      <div class="report-stats" id="report-stats">
+        <div class="rstat teal"><div class="rstat-label">Total Allotment</div><div class="rstat-value" id="stat-allot">—</div><div class="rstat-sub">Approved budget</div></div>
+        <div class="rstat green"><div class="rstat-label">Total Obligations</div><div class="rstat-value" id="stat-obl">—</div><div class="rstat-sub" id="stat-obl-pct">—% utilized</div></div>
+        <div class="rstat blue"><div class="rstat-label">Disbursements</div><div class="rstat-value" id="stat-disb">—</div><div class="rstat-sub">Posted obligations</div></div>
+        <div class="rstat amber"><div class="rstat-label">Earmarks</div><div class="rstat-value" id="stat-em">—</div><div class="rstat-sub">Pending reservations</div></div>
+        <div class="rstat red"><div class="rstat-label">Unobligated Balance</div><div class="rstat-value" id="stat-unobl">—</div><div class="rstat-sub">Remaining allotment</div></div>
+      </div>
+
+      <!-- Tree Report Table -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Financial Accountability Report No. 1.A</h2>
+          <span class="badge badge-teal" id="row-count">Loading…</span>
+        </div>
+        <div class="tree-table-wrap">
+          <table class="tree-table" id="tree-table">
+            <thead>
+              <tr class="group-row">
+                <th rowspan="2" style="text-align:left">Particulars</th>
+                <th colspan="6">Values</th>
+              </tr>
+              <tr>
+                <th>Allotment Received<br>per Responsibility Center</th>
+                <th>Current Year<br>Obligations</th>
+                <th>Current Year<br>Disbursement</th>
+                <th>Unpaid<br>Obligations</th>
+                <th>Unobligated Balance<br>per Responsibility</th>
+                <th>Earmark</th>
+              </tr>
+            </thead>
+            <tbody id="tree-tbody">
+              <tr class="no-data-row"><td colspan="7">Loading report…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="/js/nav.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/reports.js"></script>
+</body>
+</html>

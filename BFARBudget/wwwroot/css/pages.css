@@ -1,0 +1,71 @@
+/* =========================================
+   BFAR E-Budget — Page Styles
+   Covers: Dashboard, Manage Data tabs,
+   and inline-form used in Manage Data.
+   bfar-style.css handles all shared styles.
+   ========================================= */
+
+/* ---- Dashboard Banner ---- */
+.wave-banner {
+  background: linear-gradient(135deg, #0a3d4a 0%, #0e6a7e 60%, #0fb8c9 100%);
+  border-radius: var(--radius-lg);
+  padding: 2rem 2rem 1.5rem;
+  margin-bottom: 1.75rem;
+  position: relative; overflow: hidden; color: #fff;
+}
+.wave-banner::after {
+  content: '🌊'; position: absolute; right: 2rem; bottom: -4px;
+  font-size: 80px; opacity: 0.15; pointer-events: none;
+}
+.wave-banner h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.wave-banner p  { font-size: 13px; opacity: 0.8; }
+.wave-meta { display: flex; gap: 1.5rem; margin-top: 1.25rem; flex-wrap: wrap; }
+.wave-meta-item { display: flex; flex-direction: column; gap: 2px; }
+.wave-meta-item span:first-child { font-size: 10px; opacity: 0.65; text-transform: uppercase; letter-spacing: 0.06em; }
+.wave-meta-item span:last-child  { font-size: 14px; font-weight: 600; }
+
+/* ---- Dashboard Layout ---- */
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; margin-top: 1.25rem; }
+@media (max-width: 1100px) { .three-col { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 700px)  { .three-col { grid-template-columns: 1fr; } }
+
+.quick-links { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.quick-link {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 1rem;
+  text-align: center; cursor: pointer; text-decoration: none;
+  transition: box-shadow 0.15s, transform 0.12s;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.quick-link:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.quick-link-icon { width: 40px; height: 40px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.quick-link span  { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+.quick-link small { font-size: 10px; color: var(--text-muted); }
+
+.rc-row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 12px; }
+.rc-row:last-child { border-bottom: none; }
+.rc-name   { font-size: 12px; font-weight: 500; flex: 1; }
+.rc-amount { font-size: 12px; text-align: right; min-width: 100px; }
+
+.activity-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.activity-item:last-child { border-bottom: none; }
+.activity-dot  { width: 7px; height: 7px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+.activity-text { font-size: 12px; color: var(--text-primary); line-height: 1.5; }
+.activity-time { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+/* ---- Manage Data Tabs ---- */
+.tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+.tab-btn {
+  padding: 9px 18px; font-size: 13px; font-weight: 500;
+  border: none; background: none; cursor: pointer; color: var(--text-secondary);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.tab-btn:hover  { color: var(--accent-dark); }
+.tab-btn.active { color: var(--accent-dark); border-bottom-color: var(--accent); }
+.tab-panel         { display: none; }
+.tab-panel.active  { display: block; }
+
+/* ---- Inline Add-Row Form (Manage Data) ---- */
+.inline-form { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.inline-form .field-group { flex: 1; min-width: 150px; }

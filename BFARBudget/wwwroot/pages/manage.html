@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Data — BFAR E-Budget</title>
+  <link rel="stylesheet" href="/css/bfar-style.css" />
+  <link rel="stylesheet" href="/css/pages.css" />
+  <style>
+    /* ── Pagination ── */
+    .pg-wrap {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem 1.5rem;
+      border-top: 1px solid var(--border);
+      background: var(--bg-secondary);
+      flex-wrap: wrap; gap: 8px;
+    }
+    .pg-info { font-size: 12px; color: var(--text-muted); }
+    .pg-btns { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+    .pg-btn {
+      min-width: 32px; height: 30px; padding: 0 8px;
+      font-size: 12px; font-weight: 500;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: #fff; color: var(--text-secondary);
+      cursor: pointer; transition: background 0.15s, color 0.15s;
+    }
+    .pg-btn:hover:not(:disabled) { background: var(--accent-light); color: var(--accent-dark); border-color: var(--accent); }
+    .pg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .pg-btn.pg-active { background: var(--accent-dark); color: #fff; border-color: var(--accent-dark); font-weight: 700; }
+    .pg-ellipsis { font-size: 13px; color: var(--text-muted); padding: 0 4px; }
+
+    /* ── Input overrides ── */
+    .field-group input, .field-group select {
+      background: #fff;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+    .section-card { margin-bottom: 1.5rem; }
+    .cascade-note { font-size: 11px; color: var(--text-muted); margin-bottom: 0.75rem; font-style: italic; }
+    .sub-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin: 1.25rem 0 0.6rem; }
+    .allot-rc-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .allot-rc-row:last-child { border-bottom: none; }
+    .allot-rc-name { font-size: 13px; font-weight: 500; flex: 1; color: var(--text-primary); }
+    .allot-input-wrap { position: relative; }
+    .allot-input-wrap span { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--text-secondary); font-weight: 600; pointer-events: none; }
+  </style>
+  <style>
+    /* ── Manage-page extras ── */
+    .field-group input, .field-group select {
+      background: #fff;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+    .section-card { margin-bottom: 1.5rem; }
+    .sub-label {
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin: 1.25rem 0 0.6rem;
+    }
+    .cascade-note {
+      font-size: 11px; color: var(--text-muted);
+      margin-bottom: 0.75rem; font-style: italic;
+    }
+    .manage-toast {
+      display: none; align-items: center; gap: 8px;
+      padding: 10px 16px; border-radius: var(--radius-md);
+      font-size: 13px; font-weight: 600; margin-bottom: 1rem;
+    }
+    .manage-toast.show { display: flex; }
+    .manage-toast.success { background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; }
+    .manage-toast.error   { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+    .tab-count { font-size: 10px; color: var(--text-muted); margin-left: 4px; }
+    .allot-rc-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0; border-bottom: 1px solid var(--border);
+    }
+    .allot-rc-row:last-child { border-bottom: none; }
+    .allot-rc-name { font-size: 13px; font-weight: 500; flex: 1; color: var(--text-primary); }
+    .allot-input-wrap { position: relative; }
+    .allot-input-wrap span {
+      position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+      font-size: 13px; color: var(--text-secondary); font-weight: 600; pointer-events: none;
+    }
+    .allot-input-wrap input {
+      padding-left: 22px !important; width: 160px;
+      text-align: right; font-weight: 600;
+    }
+    .save-allot-btn { margin-top: 1rem; }
+  </style>
+</head>
+<body>
+
+  <div id="sidebar-root"></div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title"></div>
+        <div class="topbar-sub" id="topbar-sub"></div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-date" id="topbar-date"></div>
+        <div class="avatar">AD</div>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <div class="page-header">
+        <div>
+          <h1>Manage Data</h1>
+          <p>Manage Responsibility Centers, Signatories, Fund Categories, Expense Classes, Account Codes, and Allotments — all connected.</p>
+        </div>
+      </div>
+
+      <!-- Global toast -->
+      <div class="manage-toast" id="manage-toast"></div>
+
+      <!-- ══════════════════════════════════════
+           TABS
+           ══════════════════════════════════════ -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'rc')">
+          Responsibility Centers
+        </button>
+        <button class="tab-btn" onclick="switchTab(event,'fund')">
+          Fund Categories
+        </button>
+        <button class="tab-btn" onclick="switchTab(event,'expense')">
+          Expense Classes &amp; Codes
+        </button>
+        <button class="tab-btn" onclick="switchTab(event,'programs')">
+          Programs &amp; Activities
+        </button>
+        <button class="tab-btn" onclick="switchTab(event,'allotment')">
+          Allotment
+        </button>
+        <button class="tab-btn" onclick="switchTab(event,'users')">
+          Users
+        </button>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           TAB 1: RESPONSIBILITY CENTERS
+           ══════════════════════════════════════ -->
+      <div class="tab-panel active" id="tab-rc">
+
+        <!-- RC Master -->
+        <div class="card section-card">
+          <div class="card-header">
+            <h2>Responsibility Centers</h2>
+            <span class="badge badge-teal" id="rc-count">Loading…</span>
+          </div>
+          <div class="card-body">
+            <div class="cascade-note">Add an RC first, then assign its Signatories below.</div>
+            <div class="inline-form">
+              <div class="field-group">
+                <label>RC Code <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="rc-code" placeholder="e.g. FAD" maxlength="20" />
+              </div>
+              <div class="field-group" style="flex:2">
+                <label>RC Name <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="rc-name" placeholder="e.g. Finance & Admin Division" />
+              </div>
+              <button class="btn btn-primary" style="align-self:flex-end" onclick="addRC()">＋ Add RC</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="text-align:left">RC Code</th>
+                    <th style="text-align:left">RC Name</th>
+                    <th style="text-align:center">Signatories</th>
+                    <th style="text-align:center">Status</th>
+                    <th style="text-align:center">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="rc-tbody">
+                  <tr><td colspan="5" style="text-align:center;color:var(--text-muted)">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="rc-pg"></div>
+          </div>
+        </div>
+
+        <!-- Signatory -->
+        <div class="card section-card">
+          <div class="card-header">
+            <h2>Signatories</h2>
+            <span class="badge badge-teal" id="sig-count">Loading…</span>
+          </div>
+          <div class="card-body">
+            <div class="cascade-note">Each signatory is assigned to a Responsibility Center.</div>
+            <div class="inline-form">
+              <div class="field-group">
+                <label>Responsibility Center <span style="color:var(--danger)">*</span></label>
+                <select id="sig-rc">
+                  <option value="">— Select RC —</option>
+                </select>
+              </div>
+              <div class="field-group" style="flex:2">
+                <label>Full Name <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="sig-name" placeholder="e.g. Juan dela Cruz" />
+              </div>
+              <div class="field-group" style="flex:2">
+                <label>Position <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="sig-position" placeholder="e.g. Regional Director" />
+              </div>
+              <button class="btn btn-primary" style="align-self:flex-end" onclick="addSignatory()">＋ Add</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="text-align:left">Name</th>
+                    <th style="text-align:left">Position</th>
+                    <th style="text-align:left">Responsibility Center</th>
+                    <th style="text-align:center">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="sig-tbody">
+                  <tr><td colspan="4" style="text-align:center;color:var(--text-muted)">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="sig-pg"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ══════════════════════════════════════
+           TAB 2: FUND CATEGORIES
+           ══════════════════════════════════════ -->
+      <div class="tab-panel" id="tab-fund">
+        <div class="card section-card">
+          <div class="card-header">
+            <h2>Fund Categories</h2>
+            <span class="badge badge-teal" id="fund-count">Loading…</span>
+          </div>
+          <div class="card-body">
+            <div class="cascade-note">All 6 fund columns are saved automatically. Only Fund Category is shown in dropdowns.</div>
+            <div class="form-grid" style="margin-bottom:1rem;">
+              <div class="field-group">
+                <label>Fund Cluster <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="fund-cluster" placeholder="e.g. 01000000 - Regular Agency Fund" />
+              </div>
+              <div class="field-group">
+                <label>Financing Source <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="fund-financing" placeholder="e.g. 01100000 - General Fund" />
+              </div>
+              <div class="field-group">
+                <label>Authorization Code <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="fund-auth" placeholder="e.g. 01101000 - New General Appropriations" />
+              </div>
+              <div class="field-group">
+                <label>Fund Category <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="fund-category" placeholder="e.g. 01101101 - Specific Budget (Current)" />
+              </div>
+              <div class="field-group">
+                <label>Full Funding Source Code <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="fund-full" placeholder="e.g. 01101101" />
+              </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;">
+              <button class="btn btn-primary" onclick="addFund()">＋ Add Fund Category</button>
+            </div>
+            <div class="table-wrap" style="margin-top:1rem;">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="text-align:left">Fund Category</th>
+                    <th style="text-align:left">Fund Cluster</th>
+                    <th style="text-align:left">Full Code</th>
+                    <th style="text-align:center">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="fund-tbody">
+                  <tr><td colspan="4" style="text-align:center;color:var(--text-muted)">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="fund-pg"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           TAB 3: EXPENSE CLASSES & CODES
+           ══════════════════════════════════════ -->
+      <div class="tab-panel" id="tab-expense">
+
+        <!-- Expense Class -->
+        <div class="card section-card">
+          <div class="card-header">
+            <h2>Expense Classes</h2>
+            <span class="badge badge-teal" id="ec-count">Loading…</span>
+          </div>
+          <div class="card-body">
+            <div class="inline-form">
+              <div class="field-group">
+                <label>Code <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="ec-code" placeholder="e.g. MOOE" maxlength="10" />
+              </div>
+              <div class="field-group" style="flex:2">
+                <label>Name <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="ec-name" placeholder="e.g. Maintenance & Other Operating Expenses" />
+              </div>
+              <button class="btn btn-primary" style="align-self:flex-end" onclick="addExpenseClass()">＋ Add</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="text-align:left">Code</th>
+                    <th style="text-align:left">Name</th>
+                    <th style="text-align:center">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="ec-tbody">
+                  <tr><td colspan="3" style="text-align:center;color:var(--text-muted)">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="ec-pg"></div>
+          </div>
+        </div>
+
+        <!-- Expense Type -->
+        <div class="card section-card">
+          <div class="card-header"><h2>Expense Types</h2><span class="badge badge-teal" id="et-count">Loading…</span></div>
+          <div class="card-body">
+            <div class="cascade-note">Select an Expense Class first to group the Expense Type.</div>
+            <div class="inline-form">
+              <div class="field-group">
+                <label>Expense Class <span style="color:var(--danger)">*</span></label>
+                <select id="et-class"><option value="">— Select Class —</option></select>
+              </div>
+              <div class="field-group" style="flex:2">
+                <label>Expense Type Name <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="et-name" placeholder="e.g. Traveling Expenses (Local)" />
+              </div>
+              <button class="btn btn-primary" style="align-self:flex-end" onclick="addExpenseType()">＋ Add</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="text-align:left">Expense Type</th>
+                    <th style="text-align:left">Expense Class</th>
+                    <th style="text-align:center">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="et-tbody">
+                  <tr><td colspan="3" style="text-align:center;color:var(--text-muted)">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="et-pg"></div>
+          </div>
+        </div>
+
+        <!-- Account Code -->
+        <div class="card section-card">
+          <div class="card-header"><h2>Account Codes (UACS)</h2><span class="badge badge-teal" id="ac-count">Loading…</span></div>
+          <div class="card-body">
+            <div class="cascade-note">Account codes are linked to an Expense Type.</div>
+            <div class="inline-form">
+              <div class="field-group">
+                <label>Expense Type <span style="color:var(--danger)">*</span></label>
+                <select id="ac-type"><option value="">— Select Type —</option></select>
+              </div>
+              <div class="field-group">
+                <label>Account Code <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="ac-code" placeholder="e.g. 5020301000" maxlength="15" />
+              </div>
+              <div class="field-group" style="flex:2">
+                <label>Description <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="ac-desc" placeholder="e.g. Office Supplies Expenses" />
+              </div>
+              <button class="btn btn-primary" style="align-self:flex-end" onclick="addAccountCode()">＋ Add</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="text-align:left">Account Code</th>
+                    <th style="text-align:left">Description</th>
+                    <th style="text-align:left">Expense Type</th>
+                    <th style="text-align:center">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="ac-tbody">
+                  <tr><td colspan="4" style="text-align:center;color:var(--text-muted)">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="ac-pg"></div>
+          </div>
+        </div>
+
+        <!-- Sub Account Code -->
+        <div class="card section-card">
+          <div class="card-header">
+            <h2>Sub-Account Codes</h2>
+            <span class="badge badge-teal" id="sac-count">Loading…</span>
+          </div>
+          <div class="card-body">
+            <div class="cascade-note">Sub-account codes are optional — linked to an Account Code. Leave blank when not applicable.</div>
+            <div class="inline-form">
+              <div class="field-group">
+                <label>Account Code <span style="color:var(--danger)">*</span></label>
+                <select id="sac-acct"><option value="">— Select Account Code —</option></select>
+              </div>
+              <div class="field-group">
+                <label>Sub-Account Code <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="sac-code" placeholder="e.g. 001" maxlength="10" />
+              </div>
+              <div class="field-group" style="flex:2">
+                <label>Description <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="sac-desc" placeholder="e.g. Regular" />
+              </div>
+              <button class="btn btn-primary" style="align-self:flex-end" onclick="addSubAccountCode()">＋ Add</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="text-align:left">Sub-Account Code</th>
+                    <th style="text-align:left">Description</th>
+                    <th style="text-align:left">Account Code</th>
+                    <th style="text-align:center">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="sac-tbody">
+                  <tr><td colspan="4" style="text-align:center;color:var(--text-muted)">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="sac-pg"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ══════════════════════════════════════
+           TAB 4: PROGRAMS & ACTIVITIES
+           ══════════════════════════════════════ -->
+      <div class="tab-panel" id="tab-programs">
+
+        <!-- Info banner -->
+        <div style="background:var(--accent-light);border:1px solid var(--border);border-radius:var(--radius-md);padding:0.85rem 1.25rem;margin-bottom:1.25rem;font-size:13px;color:var(--accent-dark);">
+          <strong>Flexible chain:</strong> Program → <em>(optional)</em> Project Category → Project Sub-Category → Activity Level.
+          Programs that skip Project Category can link Sub-Categories directly to the Program.
+        </div>
+
+        <!-- Program -->
+        <div class="card section-card">
+          <div class="card-header">
+            <h2>Programs / Projects</h2>
+            <span class="badge badge-teal" id="prog-count">Loading…</span>
+          </div>
+          <div class="card-body">
+            <div class="inline-form">
+              <div class="field-group" style="flex:3">
+                <label>Program / Project Name <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="prog-name" placeholder="e.g. Fisheries Management Program" />
+              </div>
+              <button class="btn btn-primary" style="align-self:flex-end" onclick="addProgram()">＋ Add</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="text-align:left">Program / Project Name</th>
+                    <th style="text-align:center">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="prog-tbody">
+                  <tr><td colspan="2" style="text-align:center;color:var(--text-muted)">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="prog-pg"></div>
+          </div>
+        </div>
+
+        <!-- Project Category (Optional) -->
+        <div class="card section-card">
+          <div class="card-header">
+            <h2>Project Categories <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:6px;">(Optional)</span></h2>
+            <span class="badge badge-teal" id="pcat-count">Loading…</span>
+          </div>
+          <div class="card-body">
+            <div class="cascade-note">Optional — only add if your Program uses Project Categories. Programs without categories can link Sub-Categories directly.</div>
+            <div class="inline-form">
+              <div class="field-group">
+                <label>Program <span style="color:var(--danger)">*</span></label>
+                <select id="pcat-prog"><option value="">— Select Program —</option></select>
+              </div>
+              <div class="field-group" style="flex:2">
+                <label>Category Name <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="pcat-name" placeholder="e.g. Infrastructure" />
+              </div>
+              <button class="btn btn-primary" style="align-self:flex-end" onclick="addProjectCategory()">＋ Add</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="text-align:left">Category Name</th>
+                    <th style="text-align:left">Program</th>
+                    <th style="text-align:center">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="pcat-tbody">
+                  <tr><td colspan="3" style="text-align:center;color:var(--text-muted)">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="pcat-pg"></div>
+          </div>
+        </div>
+
+        <!-- Project Sub-Category — links to Program OR Project Category -->
+        <div class="card section-card">
+          <div class="card-header">
+            <h2>Project Sub-Categories</h2>
+            <span class="badge badge-teal" id="psub-count">Loading…</span>
+          </div>
+          <div class="card-body">
+            <div class="cascade-note">
+              Link a Sub-Category to a <strong>Project Category</strong> (if the program has one),
+              OR directly to a <strong>Program</strong> (if there's no category).
+            </div>
+            <div class="form-grid" style="margin-bottom:1rem;">
+              <div class="field-group">
+                <label>Program <span style="color:var(--danger)">*</span></label>
+                <select id="psub-prog" onchange="filterPsubCategories()">
+                  <option value="">— Select Program —</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label>Project Category <span style="font-size:10px;color:var(--text-muted)">(leave blank if none)</span></label>
+                <select id="psub-cat">
+                  <option value="">— No Category / Direct to Program —</option>
+                </select>
+              </div>
+              <div class="field-group" style="flex:2">
+                <label>Sub-Category Name <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="psub-name" placeholder="e.g. Hatchery Operations" />
+              </div>
+              <div style="align-self:flex-end;">
+                <button class="btn btn-primary" onclick="addProjectSubCategory()">＋ Add</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="text-align:left">Sub-Category Name</th>
+                    <th style="text-align:left">Project Category</th>
+                    <th style="text-align:left">Program</th>
+                    <th style="text-align:center">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="psub-tbody">
+                  <tr><td colspan="4" style="text-align:center;color:var(--text-muted)">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="psub-pg"></div>
+          </div>
+        </div>
+
+        <!-- Activity Level -->
+        <div class="card section-card">
+          <div class="card-header">
+            <h2>Activity Levels</h2>
+            <span class="badge badge-teal" id="alv-count">Loading…</span>
+          </div>
+          <div class="card-body">
+            <div class="cascade-note">Each activity level belongs to a Project Sub-Category.</div>
+            <div class="inline-form">
+              <div class="field-group">
+                <label>Project Sub-Category <span style="color:var(--danger)">*</span></label>
+                <select id="alv-sub"><option value="">— Select Sub-Category —</option></select>
+              </div>
+              <div class="field-group" style="flex:2">
+                <label>Activity Level Name <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="alv-name" placeholder="e.g. Regional" />
+              </div>
+              <button class="btn btn-primary" style="align-self:flex-end" onclick="addActivityLevel()">＋ Add</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="text-align:left">Activity Level</th>
+                    <th style="text-align:left">Project Sub-Category</th>
+                    <th style="text-align:center">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="alv-tbody">
+                  <tr><td colspan="3" style="text-align:center;color:var(--text-muted)">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="alv-pg"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ══════════════════════════════════════
+           TAB 5: ALLOTMENT
+           ══════════════════════════════════════ -->
+      <div class="tab-panel" id="tab-allotment">
+        <div class="card section-card">
+          <div class="card-header">
+            <h2>Allotment per Responsibility Center</h2>
+            <span class="badge badge-teal">FY <span id="allot-fy-badge">2026</span></span>
+          </div>
+          <div class="card-body">
+            <div class="inline-form" style="margin-bottom:1.25rem;">
+              <div class="field-group">
+                <label>Fiscal Year <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="allot-fy" placeholder="e.g. 2026" maxlength="4"
+                  oninput="document.getElementById('allot-fy-badge').textContent=this.value||'—'" />
+              </div>
+              <div class="field-group">
+                <label>Fund Category <span style="color:var(--danger)">*</span></label>
+                <select id="allot-fund"><option value="">— Select Fund —</option></select>
+              </div>
+              <div class="field-group">
+                <label>Expense Class <span style="color:var(--danger)">*</span></label>
+                <select id="allot-class" onchange="filterAllotExpenseTypes()">
+                  <option value="">— Select Class —</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label>Expense Type <span style="color:var(--danger)">*</span></label>
+                <select id="allot-exptype" onchange="filterAllotAccountCodes()" disabled>
+                  <option value="">— Select Class first —</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label>Account Code <span style="color:var(--danger)">*</span></label>
+                <select id="allot-acct" disabled>
+                  <option value="">— Select Type first —</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="sub-label">Enter allotment amount per RC</div>
+            <div id="allot-rc-list">
+              <div style="color:var(--text-muted);font-size:13px;padding:1rem 0;">Loading Responsibility Centers…</div>
+            </div>
+            <div id="allot-rc-pg"></div>
+
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:1.25rem;">
+              <button class="btn btn-primary save-allot-btn" onclick="saveAllotment()">💾 Save Allotment</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Allotment Records -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Allotment Records</h2>
+            <span class="badge badge-teal" id="allot-count">Loading…</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="text-align:left">RC</th>
+                  <th style="text-align:left">Fund Category</th>
+                  <th style="text-align:left">Expense Class</th>
+                  <th style="text-align:left">Account Code</th>
+                  <th style="text-align:left">Fiscal Year</th>
+                  <th style="text-align:right">Amount (₱)</th>
+                  <th style="text-align:center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="allot-tbody">
+                <tr><td colspan="7" style="text-align:center;color:var(--text-muted)">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="allot-rec-pg"></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           TAB 5: USERS
+           ══════════════════════════════════════ -->
+      <div class="tab-panel" id="tab-users">
+        <div class="card">
+          <div class="card-header">
+            <h2>System Users</h2>
+            <span class="badge badge-teal" id="user-count">Loading…</span>
+          </div>
+          <div class="card-body">
+            <div class="inline-form">
+              <div class="field-group">
+                <label>Full Name <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="u-name" placeholder="Full name" />
+              </div>
+              <div class="field-group">
+                <label>Username <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="u-user" placeholder="Username" />
+              </div>
+              <div class="field-group">
+                <label>Password <span style="color:var(--danger)">*</span></label>
+                <input type="password" id="u-pass" placeholder="Password" />
+              </div>
+              <div class="field-group">
+                <label>Role <span style="color:var(--danger)">*</span></label>
+                <select id="u-role">
+                  <option value="admin">Budget Admin</option>
+                  <option value="staff">Budget Staff</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" style="align-self:flex-end" onclick="addUser()">＋ Add User</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="text-align:left">Full Name</th>
+                    <th style="text-align:left">Username</th>
+                    <th style="text-align:left">Role</th>
+                    <th style="text-align:center">Status</th>
+                    <th style="text-align:center">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="user-tbody">
+                  <tr><td colspan="5" style="text-align:center;color:var(--text-muted)">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="user-pg"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="/js/nav.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/manage.js"></script>
+</body>
+</html>

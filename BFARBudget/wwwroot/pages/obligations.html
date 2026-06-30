@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Obligations — BFAR E-Budget</title>
+  <link rel="stylesheet" href="/css/bfar-style.css" />
+  <link rel="stylesheet" href="/css/pages.css" />
+  <link rel="stylesheet" href="/css/obligations-additions.css" />
+</head>
+<body>
+
+  <div id="sidebar-root"></div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title"></div>
+        <div class="topbar-sub"   id="topbar-sub"></div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-date" id="topbar-date"></div>
+        <div class="avatar">AD</div>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <div class="page-header">
+        <div>
+          <h1>Obligations</h1>
+          <p>Create and manage obligation requests against the current allotment.</p>
+        </div>
+        <button class="btn btn-primary" onclick="toggleEl('ors-form')">＋ New ORS/BURS</button>
+      </div>
+
+      <!-- Toast notification -->
+      <div class="ors-toast hidden" id="ors-toast"></div>
+
+      <!-- ═══════════════════════════════════════════════
+           NEW ORS FORM (hidden by default)
+           ═══════════════════════════════════════════════ -->
+      <div class="hidden" id="ors-form">
+
+        <!-- ── Section 1: General Info ── -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <h2>New Obligation Request (ORS/BURS)</h2>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="badge badge-teal">General Info</span>
+              <button class="btn btn-sm" onclick="toggleEl('ors-form')">✕ Close</button>
+            </div>
+          </div>
+          <div class="card-body">
+
+            <div class="form-grid" style="margin-bottom:1rem;">
+
+              <div class="field-group">
+                <label style="display:flex;align-items:center;justify-content:space-between;">
+                  <span>ORS/BURS No. <span id="ors-no-badge" style="font-size:10px;font-weight:500;color:var(--accent-dark);background:var(--accent-light);padding:1px 7px;border-radius:999px;margin-left:4px;">Auto</span></span>
+                  <button type="button" id="ors-no-edit-btn" onclick="toggleOrsEdit()"
+                    style="font-size:11px;font-weight:600;padding:2px 10px;border-radius:999px;border:1px solid var(--border-strong);background:#fff;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;gap:4px;">
+                    ✏️ Edit
+                  </button>
+                </label>
+                <input type="text" id="ors-no" readonly
+                  style="background:#f0f8fa;cursor:not-allowed;color:var(--accent-dark);font-weight:600;letter-spacing:0.05em;"
+                  title="Auto-generated. Click 'Edit' to override manually." />
+              </div>
+
+              <div class="field-group">
+                <label>Date <span class="req-mark">*</span></label>
+                <input type="date" id="ors-date" />
+              </div>
+
+              <div class="field-group">
+                <label>Payee / Supplier <span class="req-mark">*</span></label>
+                <input type="text" id="ors-payee" placeholder="Full name of payee or supplier" />
+              </div>
+
+              <div class="field-group">
+                <label>Creditor Type <span class="req-mark">*</span></label>
+                <div class="radio-toggle">
+                  <input type="radio" name="creditor" id="cr-internal" value="Internal" checked />
+                  <label for="cr-internal">Internal</label>
+                  <input type="radio" name="creditor" id="cr-external" value="External" />
+                  <label for="cr-external">External</label>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label>Quarter <span class="req-mark">*</span></label>
+                <select id="ors-quarter">
+                  <option value="">— Select Quarter —</option>
+                  <option value="Q1">Q1 (Jan – Mar)</option>
+                  <option value="Q2">Q2 (Apr – Jun)</option>
+                  <option value="Q3">Q3 (Jul – Sep)</option>
+                  <option value="Q4">Q4 (Oct – Dec)</option>
+                </select>
+              </div>
+
+              <div class="field-group">
+                <label>Responsibility Center <span class="req-mark">*</span></label>
+                <select id="ors-rc"
+                  onchange="cascadeLoad('ors-rc', '/api/dropdown/signatories', 'ors-signatory', '— Select Signatory —')">
+                  <option value="">— Select RC —</option>
+                </select>
+              </div>
+
+              <div class="field-group">
+                <label>Signatory <span class="req-mark">*</span></label>
+                <select id="ors-signatory" disabled>
+                  <option value="">— Select RC first —</option>
+                </select>
+              </div>
+
+            </div>
+
+            <div class="field-group">
+              <label>Particulars <span class="req-mark">*</span></label>
+              <textarea id="ors-particulars" rows="4"
+                placeholder="Describe the nature of this obligation in detail..."
+                oninput="updateCharCount()"></textarea>
+              <div class="char-counter" id="char-counter">0 characters</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── Section 2: Project Details ── -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <h2>Project Details</h2>
+            <span class="badge badge-teal">Program / Activity</span>
+          </div>
+          <div class="card-body">
+            <div class="form-grid">
+
+              <div class="field-group">
+                <label>Program / Project <span class="req-mark">*</span></label>
+                <select id="ors-program"
+                  onchange="cascadeLoad('ors-program', '/api/dropdown/project-categories', 'ors-projcat', '— Select Category —')">
+                  <option value="">— Select Program —</option>
+                </select>
+              </div>
+
+              <div class="field-group">
+                <label>Project Category <span class="req-mark">*</span></label>
+                <select id="ors-projcat" disabled
+                  onchange="cascadeLoad('ors-projcat', '/api/dropdown/project-sub-categories', 'ors-projsubcat', '— Select Sub-Category —')">
+                  <option value="">— Select Program first —</option>
+                </select>
+              </div>
+
+              <div class="field-group">
+                <label>Project Sub-Category</label>
+                <select id="ors-projsubcat" disabled
+                  onchange="cascadeLoad('ors-projsubcat', '/api/dropdown/activity-levels', 'ors-activity', '— Select Activity Level —')">
+                  <option value="">— Select Category first —</option>
+                </select>
+              </div>
+
+              <div class="field-group">
+                <label>Activity Level <span class="req-mark">*</span></label>
+                <select id="ors-activity" disabled>
+                  <option value="">— Select Sub-Category first —</option>
+                </select>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Section 3: Expense & Accounting ── -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <h2>Expense &amp; Accounting Details</h2>
+            <span class="badge badge-teal">Budget Charging</span>
+          </div>
+          <div class="card-body">
+
+            <div class="form-grid" style="margin-bottom:1rem;">
+
+              <div class="field-group">
+                <label>Expense Class <span class="req-mark">*</span></label>
+                <select id="ors-expclass"
+                  onchange="cascadeLoad('ors-expclass', '/api/dropdown/expense-types', 'ors-exptype', '— Select Expense Type —')">
+                  <option value="">— Select Expense Class —</option>
+                </select>
+              </div>
+
+              <div class="field-group">
+                <label>Expense Type <span class="req-mark">*</span></label>
+                <select id="ors-exptype" disabled
+                  onchange="cascadeLoad('ors-exptype', '/api/dropdown/account-codes', 'ors-acct', '— Select Account Code —')">
+                  <option value="">— Select Expense Class first —</option>
+                </select>
+              </div>
+
+              <div class="field-group">
+                <label>Account Code <span class="req-mark">*</span></label>
+                <select id="ors-acct" disabled
+                  onchange="cascadeLoad('ors-acct', '/api/dropdown/sub-account-codes', 'ors-subacct', '— Select Sub-Account —')">
+                  <option value="">— Select Expense Type first —</option>
+                </select>
+              </div>
+
+              <div class="field-group">
+                <label>Sub-Account Code</label>
+                <select id="ors-subacct" disabled>
+                  <option value="">— Select Account Code first —</option>
+                </select>
+              </div>
+
+            </div>
+
+            <div class="form-grid">
+              <div class="field-group">
+                <label>Fund Category <span class="req-mark">*</span></label>
+                <select id="ors-fund-cat" onchange="loadFundDetail(this.value)">
+                  <option value="">— Select Fund Category —</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Fund detail preview — shown after selecting a fund category -->
+            <div id="fund-detail-preview" class="hidden" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:1rem;margin-top:0.75rem;margin-bottom:0.75rem;">
+              <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.6rem;">Fund Details — Auto-filled on save</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;">
+                <div>
+                  <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Fund Cluster</div>
+                  <div style="font-size:12px;font-weight:500;color:var(--text-primary)" id="fd-cluster">—</div>
+                </div>
+                <div>
+                  <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Financing Source</div>
+                  <div style="font-size:12px;font-weight:500;color:var(--text-primary)" id="fd-financing">—</div>
+                </div>
+                <div>
+                  <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Authorization Code</div>
+                  <div style="font-size:12px;font-weight:500;color:var(--text-primary)" id="fd-auth">—</div>
+                </div>
+                <div>
+                  <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Full Funding Source Code</div>
+                  <div style="font-size:12px;font-weight:700;color:var(--accent-dark)" id="fd-full">—</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="field-group">
+                <label>Amount Obligation (₱) <span class="req-mark">*</span></label>
+                <div class="amount-wrap">
+                  <span class="amount-prefix">₱</span>
+                  <input type="number" id="ors-amount" placeholder="0.00" min="0" step="0.01" />
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Action bar -->
+          <div class="form-actions">
+            <span class="req-note">Fields marked <span class="req-mark">*</span> are required.</span>
+            <div style="display:flex;gap:10px;">
+              <button class="btn" onclick="clearORS()">Clear</button>
+              <button class="btn btn-primary" id="btn-obligate" onclick="saveORS()">✔ Obligate</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <!-- /ors-form -->
+
+      <!-- ═══════════════════════════════════════════════
+           RECORDS TABLE
+           ═══════════════════════════════════════════════ -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Obligation Records</h2>
+          <span class="badge badge-teal" id="ors-count">0 records</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align:left">ORS No.</th>
+                <th style="text-align:left">Date</th>
+                <th style="text-align:left">Responsibility Center</th>
+                <th style="text-align:left">Particulars</th>
+                <th style="text-align:right">Amount (₱)</th>
+                <th style="text-align:center">Status</th>
+                <th style="text-align:center">Action</th>
+              </tr>
+            </thead>
+            <tbody id="ors-tbody">
+              <tr>
+                <td colspan="7" style="text-align:center;color:var(--text-muted)">Loading records…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="/js/nav.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/obligations.js"></script>
+</body>
+</html>

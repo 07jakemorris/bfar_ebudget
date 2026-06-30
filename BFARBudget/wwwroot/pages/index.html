@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — BFAR E-Budget</title>
+  <link rel="stylesheet" href="/css/bfar-style.css" />
+  <link rel="stylesheet" href="/css/pages.css" />
+</head>
+<body>
+
+  <!-- Sidebar injected by nav.js -->
+  <div id="sidebar-root"></div>
+
+  <div class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title"></div>
+        <div class="topbar-sub"   id="topbar-sub"></div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-date" id="topbar-date"></div>
+        <div class="avatar">AD</div>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- Welcome Banner -->
+      <div class="wave-banner">
+        <h2>Welcome back, Admin</h2>
+        <p>Here's an overview of the current budget utilization across all Responsibility Centers.</p>
+        <div class="wave-meta">
+          <div class="wave-meta-item"><span>Fiscal Year</span><span>2025</span></div>
+          <div class="wave-meta-item"><span>Fund Source</span><span>General Appropriations</span></div>
+          <div class="wave-meta-item"><span>Division</span><span>Finance &amp; Admin Division</span></div>
+          <div class="wave-meta-item"><span>Status</span><span>🟢 Active</span></div>
+        </div>
+      </div>
+
+      <!-- Stat Cards -->
+      <div class="stats-grid">
+        <div class="stat-card teal"><div class="stat-label">Total Allotment</div><div class="stat-value">₱12.4M</div><div class="stat-sub">FY 2025 GAA</div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:36px;height:36px;opacity:0.13"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div></div>
+        <div class="stat-card green"><div class="stat-label">Total Obligations</div><div class="stat-value">₱8.1M</div><div class="stat-sub">65.3% of allotment</div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:36px;height:36px;opacity:0.13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/><polyline points="9 9 10 9 11 9"/></svg></div></div>
+        <div class="stat-card amber"><div class="stat-label">Total Earmarks</div><div class="stat-value">₱1.2M</div><div class="stat-sub">Reserved, unobligated</div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:36px;height:36px;opacity:0.13"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div></div>
+        <div class="stat-card blue"><div class="stat-label">Disbursements</div><div class="stat-value">₱6.3M</div><div class="stat-sub">77.8% of obligations</div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:36px;height:36px;opacity:0.13"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div></div>
+        <div class="stat-card red"><div class="stat-label">Unobligated Balance</div><div class="stat-value">₱3.1M</div><div class="stat-sub">Remaining allotment</div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:36px;height:36px;opacity:0.13"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></div></div>
+      </div>
+
+      <!-- 3-column: Quick Links | RC Utilization | Recent Activity -->
+      <div class="three-col">
+
+        <div class="card">
+          <div class="card-header"><h2>Quick Actions</h2></div>
+          <div class="card-body">
+            <div class="quick-links">
+              <a class="quick-link" href="obligations.html">
+                <div class="quick-link-icon" style="background:var(--accent-light);">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent-dark)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+                </div>
+                <span>New Obligation</span><small>Create ORS/BURS</small>
+              </a>
+              <a class="quick-link" href="earmarking.html">
+                <div class="quick-link-icon" style="background:#fef3c7;">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                </div>
+                <span>New Earmark</span><small>Reserve allotment</small>
+              </a>
+              <a class="quick-link" href="reports.html">
+                <div class="quick-link-icon" style="background:#d1fae5;">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#065f46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                </div>
+                <span>Budget Report</span><small>View SAAODB</small>
+              </a>
+              <a class="quick-link" href="manage.html">
+                <div class="quick-link-icon" style="background:#ede9fe;">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5b21b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </div>
+                <span>Manage Data</span><small>RC, Funds, Codes</small>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Utilization by RC</h2>
+            <span class="badge badge-teal">FY 2025</span>
+          </div>
+          <div class="card-body" id="rc-list"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Recent Activity</h2>
+            <span class="badge badge-gray">Latest</span>
+          </div>
+          <div class="card-body" id="activity-list"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/nav.js"></script>
+  <script src="/js/utils.js"></script>
+  <script>
+    /* Dashboard data — edit here to update figures */
+    const RC_DATA = [
+      { name: 'Finance & Admin Division', allotment: 4200000, obligated: 3100000 },
+      { name: 'Operations Division',       allotment: 3800000, obligated: 2700000 },
+      { name: 'Technical Division',        allotment: 2600000, obligated: 1400000 },
+      { name: 'Monitoring & Evaluation',   allotment: 1800000, obligated: 900000  },
+    ];
+
+    const ACTIVITIES = [
+      { dot: '#0fb8c9', text: 'ORS #2025-0041 — Office Supplies ₱18,500',    time: 'Today, 10:24 AM' },
+      { dot: '#10b981', text: 'Earmark released — Traveling Expenses (FAD)',  time: 'Today, 9:05 AM' },
+      { dot: '#f59e0b', text: 'Budget Report exported for Q2 2025',            time: 'Yesterday, 4:30 PM' },
+      { dot: '#0ea5e9', text: 'Account code 5020201000 added by Admin',         time: 'Yesterday, 2:15 PM' },
+      { dot: '#ef4444', text: 'ORS #2025-0037 flagged as overdue',              time: 'Jun 8, 2025' },
+      { dot: '#0fb8c9', text: 'FY 2025 allotment uploaded and verified',        time: 'Jun 5, 2025' },
+    ];
+
+    document.addEventListener('DOMContentLoaded', function () {
+      // RC Utilization bars
+      const rcList = document.getElementById('rc-list');
+      RC_DATA.forEach(function (rc) {
+        const pct   = Math.round((rc.obligated / rc.allotment) * 100);
+        const color = pct >= 90 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#10b981';
+        rcList.innerHTML += `
+          <div class="rc-row">
+            <div style="flex:1">
+              <div class="rc-name">${rc.name}</div>
+              <div class="progress-wrap" style="margin-top:5px">
+                <div class="progress-bar" style="width:${pct}%;background:${color}"></div>
+              </div>
+            </div>
+            <div class="rc-amount">
+              <div style="font-weight:700">₱${(rc.obligated / 1e6).toFixed(2)}M</div>
+              <div style="font-size:11px;color:var(--text-muted)">${pct}% obligated</div>
+            </div>
+          </div>`;
+      });
+
+      // Activity feed
+      const actList = document.getElementById('activity-list');
+      ACTIVITIES.forEach(function (a) {
+        actList.innerHTML += `
+          <div class="activity-item">
+            <div class="activity-dot" style="background:${a.dot}"></div>
+            <div>
+              <div class="activity-text">${a.text}</div>
+              <div class="activity-time">${a.time}</div>
+            </div>
+          </div>`;
+      });
+    });
+  </script>
+</body>
+</html>
