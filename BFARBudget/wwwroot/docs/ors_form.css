@@ -1,0 +1,366 @@
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 9pt;
+      background: #e0e0e0;
+      padding: 18px;
+    }
+
+    #toolbar {
+      max-width: 218mm;
+      margin: 0 auto 14px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    #toolbar-title {
+      font-size: 17px;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 0 1px 3px #0006;
+      margin-right: 6px;
+    }
+
+    .tbtn {
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: bold;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: filter .15s;
+      white-space: nowrap;
+    }
+    .tbtn:hover { filter: brightness(1.12); }
+
+    #ors-paper {
+      width: 8.5in;
+      min-height: 13in;
+      background: #fff;
+      margin: 0 auto;
+      padding: 3mm 5mm 5mm;
+      box-shadow: 0 0 22px #0006;
+      color: #000;
+    }
+
+    /* ── Agency Header ── */
+    .agency-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .logo-wrap {
+      width: 58px;
+      height: 58px;
+      flex-shrink: 0;
+      margin-right: 9px;
+    }
+    .logo-wrap img {
+      width: 100%; height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .agency-text { flex: 1; }
+    .agency-da   { font-size: 8.5pt; line-height: 1.25; }
+    .agency-bfar {
+      font-size: 8.5pt; font-weight: bold;
+      text-transform: uppercase; line-height: 1.25;
+    }
+    .agency-addr { font-size: 7.5pt; margin-top: 2px; line-height: 1.45; }
+
+    /* ── Title Bar ── */
+    .title-bar {
+      background: #777777;
+      text-align: center;
+      padding: 1px 30px 1px 8px;
+      margin: 5px 0 4px;
+      position: relative;
+    }
+    .title-bar span.title {
+      font-size: 18pt; font-weight: bold;
+      color: #f5f5f5; letter-spacing: .6px;
+    }
+    .title-bar .tm {
+      position: absolute; right: 6px; top: 4px;
+      font-size: 8pt; color: #aaa;
+    }
+
+    /* ── Date Row ── */
+    .date-row {
+      text-align: right;
+      font-size: 8pt;
+      margin: 4px 0 10px;
+    }
+    .date-row .date-ul {
+      border: none; border-bottom: 1px solid #444;
+      font-size: 8pt; font-family: Arial, Helvetica, sans-serif, sans-serif;
+      width: 95px; text-align: center;
+      outline: none; padding-bottom: 1px; margin-left: 4px;
+    }
+
+    /* ── ORS / Payee Info ── */
+    .info-tbl {
+      border-collapse: collapse;
+      margin-bottom: 7px;
+    }
+    .info-tbl td {
+      border: 1px solid #333;
+      padding: 2px 7px;
+      font-size: 9pt;
+    }
+    .info-tbl .lbl { font-weight: bold; white-space: nowrap; }
+    .info-tbl .val input {
+      border: none; outline: none;
+      font-size: 9pt; font-family: Arial, sans-serif; font-weight: bold;
+      width: 235px;
+    }
+
+    /* ── Main Table ── */
+    .main-tbl {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    } 
+
+    .main-tbl colgroup col:nth-child(1) { width: 15.5%; }
+    .main-tbl colgroup col:nth-child(2) { width: 26%;   }
+    .main-tbl colgroup col:nth-child(3) { width: 43%;   }
+    .main-tbl colgroup col:nth-child(4) { width: 15.5%; } 
+
+    .main-tbl th {
+      background: #9b9b9b;
+      border: 1px solid #333;
+      text-align: center;
+      padding: 0px 4px;
+      font-size: 8pt; font-weight: bold;
+      vertical-align: middle;
+    }
+
+    .main-tbl td {
+      border: 1px solid #333;
+      padding: 3px 4px;
+      font-size: 9pt;
+      vertical-align: top;
+    }
+
+    .cell-rc textarea, .cell-parts textarea {
+      width: 100%;
+      min-height: 215px;
+      border: none; outline: none;
+      resize: none;
+      font-family: Arial, sans-serif;
+      font-size: 8pt; font-weight: bold;
+      background: transparent;
+      line-height: 1.45;
+    }
+
+    /* ── Fund Category List ── */
+    #fund-list { width: 100%; }
+
+    .fi {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 1.5px;
+      position: relative;
+    }
+
+    .fi-inner {
+      display: flex;
+      align-items: flex-start;
+      flex: 1;
+      min-height: 17px;
+    }
+
+    .fi-desc {
+      flex: 1;
+      outline: none;
+      font-size: 8pt; font-weight: bold;
+      font-family: Arial, sans-serif;
+      line-height: 1.4;
+      word-break: break-word;
+      min-height: 17px;
+      padding: 0 2px;
+    }
+    .fi-desc:focus { background: #f0f7ff; border-radius: 2px; }
+
+    /* ── Per-row Amount column (parallel to fund-list) ── */
+    #amount-list { width: 100%; }
+
+    .amt-row {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 1.5px;
+      min-height: 17px;
+    }
+
+    .amt-php-label {
+      flex-shrink: 0;
+      font-size: 8pt;
+      font-family: Arial, sans-serif;
+      line-height: 1.4;
+      padding: 0 2px;
+      user-select: none;
+    }
+
+    .fi-amt {
+      flex: 1;
+      outline: none;
+      font-size: 8pt;
+      font-family: Arial, sans-serif;
+      text-align: right;
+      line-height: 1.4;
+      min-height: 17px;
+      padding: 0 2px;
+    }
+    .fi-amt:focus { background: #f0f7ff; border-radius: 2px; }
+
+    /* hover controls */
+    .fi-ctrl {
+      display: none;
+      position: absolute;
+      top: -2px;
+      right: 0;
+      align-items: center;
+      gap: 2px;
+      padding: 1px 3px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      box-shadow: 0 1px 5px rgba(0,0,0,.18);
+      z-index: 5;
+    }
+    .fi:hover .fi-ctrl { display: flex; }
+
+    .fi-ctrl button {
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+      font-size: 10px;
+      padding: 1px 3px;
+      line-height: 1.2;
+      background: #e0e0e0;
+      color: #333;
+    }
+    .fi-ctrl .del-btn { background: #ffcdd2; color: #c62828; }
+
+    /* Color dot */
+    .fi-color-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      cursor: pointer;
+      margin-top: 4px;
+      margin-right: 3px;
+      border: 1px solid #bbb;
+      visibility: hidden;
+    }
+    .fi:hover .fi-color-dot { visibility: visible; }
+
+    /* ── Total Row ── */
+    .total-row td {
+      border: 1px solid #333;
+      padding: 3px 6px;
+      font-weight: bold;
+      font-size: 8pt;
+    }
+    .total-row .td-php { text-align: right; }
+    .total-row .td-grand {
+      text-align: right;
+      display: flex;
+      align-items: center;
+    }
+    .total-row .td-grand-php {
+      flex-shrink: 0;
+      margin-right: 6px;
+    }
+    .total-row .td-grand input {
+      flex: 1;
+      border: none; outline: none;
+      font-size: 8pt; font-weight: bold;
+      font-family: Arial, sans-serif;
+      text-align: right; width: 100%;
+      background: transparent;
+    }
+
+    /* ── Certification ── */
+    .cert-wrap {
+      display: flex;
+      border: 1px solid #333;
+      border-top: none;
+    }
+    .cert-a { flex: 1; padding: 5px 6px; border-right: 1px solid #333; min-height: 62px; }
+    .cert-b { flex: 1; padding: 5px 6px; min-height: 62px; }
+    .cert-hdr { font-weight: bold; font-size: 8pt; margin-bottom: 5px; }
+    .cert-item {
+      display: flex; align-items: flex-start;
+      margin-bottom: 5px; font-size: 8.5pt; line-height: 1.35;
+    }
+    .cert-item input[type=checkbox] {
+      width: 11px; height: 11px;
+      appearance: none; -webkit-appearance: none;
+      border: 1.5px solid #c0392b;
+      background: #fff;
+      cursor: pointer;
+      flex-shrink: 0;
+      margin-right: 5px; margin-top: 2px;
+      position: relative;
+    }
+    .cert-item input[type=checkbox]:checked::after {
+      content: "✓";
+      position: absolute; top: -4px; left: 0;
+      font-size: 11px; color: #c0392b; font-weight: bold;
+    }
+
+    /* ── Signature ── */
+    .sig-wrap {
+      display: flex;
+      border: 1px solid #333;
+      border-top: none;
+    }
+    .sig-l { flex: 1; padding: 50px 10px 20px; text-align: center; border-right: 1px solid #333; }
+    .sig-r { flex: 1; padding: 50px 10px 20px; text-align: center; }
+
+    .sig-name, .sig-pos { text-align: center; }
+    .sig-name input {
+      border: none; outline: none;
+      font-size: 9pt; font-weight: bold;
+      color: #2e2e2e;
+      font-family: Arial, sans-serif;
+      text-align: center; width: 100%;
+      background: transparent;
+    }
+    .sig-pos input {
+      border: none; outline: none;
+      font-size: 8.5pt; color: #2e2e2e;
+      font-family: Arial, sans-serif;
+      text-align: center; width: 100%;
+      background: transparent;
+    }
+
+    /* ─────────────────────────────
+       PRINT
+    ───────────────────────────── */
+    @page {
+      size: 8.5in 13in;
+      margin: 0;
+    }
+    @media print {
+      body { background: #fff; padding: 0; }
+      #toolbar { display: none !important; }
+      .fi-ctrl, .fi-color-dot { display: none !important; }
+      #ors-paper {
+        box-shadow: none;
+        width: 8.5in; min-height: 13in; margin: 0;
+        padding: 3mm 4mm;
+      }
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }

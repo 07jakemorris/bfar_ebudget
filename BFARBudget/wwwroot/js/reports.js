@@ -293,12 +293,8 @@ function renderTree(clusters) {
   tbody.innerHTML = html;
   if (rowCount) rowCount.textContent = totalAccountRows + ' account code entr' + (totalAccountRows === 1 ? 'y' : 'ies');
 
-  // Default: collapse everything except top-level fund clusters
-  document.querySelectorAll('.tree-row').forEach(function(row) {
-    var parentId = row.dataset.parent;
-    if (parentId) row.classList.add('hidden-row');
-  });
-  _allExpanded = false;
+  // Default: ALL rows expanded — click toggle to collapse
+  _allExpanded = true;
   setExpandButtonLabel();
 }
 
@@ -330,14 +326,24 @@ function toggleRow(rowId, btn) {
   var isCollapsed = btn.classList.contains('collapsed');
 
   if (isCollapsed) {
+    // Currently collapsed → expand: show direct children only
     btn.classList.remove('collapsed');
-    // Show direct children only (their own children stay as-is)
     document.querySelectorAll('[data-parent="' + rowId + '"]').forEach(function(child) {
       child.classList.remove('hidden-row');
+      // Also restore the child's toggle button state if it was open before
+      var childToggle = child.querySelector('.toggle-btn');
+      if (childToggle && !childToggle.classList.contains('collapsed')) {
+        // Child was open — show its children too
+        if (child.id) {
+          document.querySelectorAll('[data-parent="' + child.id + '"]').forEach(function(grandchild) {
+            grandchild.classList.remove('hidden-row');
+          });
+        }
+      }
     });
   } else {
+    // Currently expanded → collapse: hide all descendants
     btn.classList.add('collapsed');
-    // Hide all descendants recursively
     hideDescendants(rowId);
   }
 }
@@ -359,6 +365,7 @@ function toggleAllRows() {
     if (_allExpanded) {
       row.classList.remove('hidden-row');
     } else {
+      // Collapse all — hide everything that has a parent
       if (row.dataset.parent) row.classList.add('hidden-row');
     }
   });

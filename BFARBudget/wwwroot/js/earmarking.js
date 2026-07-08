@@ -1,12 +1,3 @@
-/* =========================================
-   earmarking.js — BFAR E-Budget
-   Mirrors obligations.js architecture.
-   PR number is manually entered (YY-MM-XXXX format).
-   ========================================= */
-
-/* ════════════════════════════════════════════
-   INIT
-   ════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function () {
   const dateEl = document.getElementById('em-date');
   if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
@@ -168,14 +159,10 @@ function emCharCount() {
    ════════════════════════════════════════════ */
 function saveEarmark() {
   const get = id => document.getElementById(id);
-  const creditorEl = document.querySelector('input[name="em-creditor"]:checked');
 
   const model = {
     prNo:             get('em-no')?.value.trim(),
     earmarkedDate:    get('em-date')?.value,
-    payee:            get('em-payee')?.value.trim(),
-    creditorType:     creditorEl?.value || 'Internal',
-    quarter:          get('em-quarter')?.value,
     rcId:             parseInt(get('em-rc')?.value)          || 0,
     signatoryId:      parseInt(get('em-signatory')?.value)   || 0,
     purpose:          get('em-purpose')?.value.trim(),
@@ -189,8 +176,6 @@ function saveEarmark() {
 
   // Validation
   if (!model.prNo)             return emShowToast('PR No. is required.', 'error');
-  if (!model.payee)            return emShowToast('Payee is required.', 'error');
-  if (!model.quarter)          return emShowToast('Quarter is required.', 'error');
   if (!model.rcId)             return emShowToast('Responsibility Center is required.', 'error');
   if (!model.signatoryId)      return emShowToast('Signatory is required.', 'error');
   if (!model.purpose)          return emShowToast('Purpose / Description is required.', 'error');
@@ -331,10 +316,10 @@ function cancelEarmark(id, btn) {
    CLEAR FORM
    ════════════════════════════════════════════ */
 function clearEarmark() {
-  ['em-no','em-payee','em-purpose','em-remarks','em-amount'].forEach(id => {
+  ['em-no','em-purpose','em-remarks','em-amount'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  ['em-quarter','em-rc','em-program','em-expclass'].forEach(id => {
+  ['em-rc','em-program','em-expclass'].forEach(id => {
     const el = document.getElementById(id); if (el) el.selectedIndex = 0;
   });
 
@@ -353,9 +338,6 @@ function clearEarmark() {
 
   const dateEl = document.getElementById('em-date');
   if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
-
-  const internal = document.getElementById('em-cr-internal');
-  if (internal) internal.checked = true;
 
   const hint = document.getElementById('em-char-counter');
   if (hint) { hint.textContent = '0 characters'; hint.className = 'char-counter'; }

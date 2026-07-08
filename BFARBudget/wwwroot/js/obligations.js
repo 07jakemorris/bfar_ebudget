@@ -1,17 +1,3 @@
-/* =========================================
-   obligations.js — BFAR E-Budget
-   Features:
-   - Auto-generated ORS number (YY-MM-XXXX)
-   - Edit ORS toggle (lock/unlock)
-   - Fund category dropdown + auto-fill detail preview
-   - Success/error toast notifications
-   - Cascade dropdowns via /api/dropdown/*
-   - Save, load, delete obligations
-   ========================================= */
-
-/* ════════════════════════════════════════════
-   INIT
-   ════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function () {
   const dateEl = document.getElementById('ors-date');
   if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];

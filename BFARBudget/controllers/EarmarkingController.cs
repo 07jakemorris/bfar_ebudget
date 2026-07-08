@@ -51,12 +51,6 @@ namespace BFAR.EBudget.Controllers
             if (string.IsNullOrWhiteSpace(model.PrNo))
                 return BadRequest(new { error = "PR No. is required." });
 
-            if (string.IsNullOrWhiteSpace(model.Payee))
-                return BadRequest(new { error = "Payee is required." });
-
-            if (string.IsNullOrWhiteSpace(model.Quarter))
-                return BadRequest(new { error = "Quarter is required." });
-
             if (model.RcId <= 0)
                 return BadRequest(new { error = "Responsibility Center is required." });
 

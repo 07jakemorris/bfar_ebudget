@@ -41,7 +41,7 @@ namespace BFAR.EBudget.Data
         {
             const string sql = @"
                 INSERT INTO earmarks
-                    (pr_no, earmarked_date, payee, creditor_type, quarter,
+                    (pr_no, earmarked_date,
                      rc_id, signatory_id, purpose,
                      activity_level_id, account_code_id, sub_account_code_id,
                      fund_id, fund_cluster, financing_source,
@@ -49,7 +49,7 @@ namespace BFAR.EBudget.Data
                      department_code, agency_code, operating_unit, lower_level_unit,
                      amount, remarks, status, created_by)
                 VALUES
-                    (@pr_no, @earmarked_date, @payee, @creditor_type, @quarter,
+                    (@pr_no, @earmarked_date,
                      @rc_id, @signatory_id, @purpose,
                      @activity_level_id, @account_code_id, @sub_account_code_id,
                      @fund_id, @fund_cluster, @financing_source,
@@ -63,9 +63,6 @@ namespace BFAR.EBudget.Data
 
             cmd.Parameters.AddWithValue("@pr_no",              model.PrNo);
             cmd.Parameters.AddWithValue("@earmarked_date",     model.EarmarkedDate);
-            cmd.Parameters.AddWithValue("@payee",              model.Payee);
-            cmd.Parameters.AddWithValue("@creditor_type",      model.CreditorType);
-            cmd.Parameters.AddWithValue("@quarter",            model.Quarter);
             cmd.Parameters.AddWithValue("@rc_id",              model.RcId);
             cmd.Parameters.AddWithValue("@signatory_id",       model.SignatoryId);
             cmd.Parameters.AddWithValue("@purpose",            model.Purpose);
@@ -221,9 +218,6 @@ namespace BFAR.EBudget.Data
     {
         public string   PrNo             { get; set; } = "";
         public DateTime EarmarkedDate    { get; set; }       // renamed from PrDate
-        public string   Payee            { get; set; } = "";
-        public string   CreditorType     { get; set; } = "Internal";
-        public string   Quarter          { get; set; } = "";
         public int      RcId             { get; set; }
         public int      SignatoryId      { get; set; }
         public string   Purpose          { get; set; } = "";

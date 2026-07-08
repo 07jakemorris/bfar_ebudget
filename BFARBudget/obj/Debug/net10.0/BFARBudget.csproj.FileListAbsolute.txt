@@ -248,10 +248,7 @@ C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\
 C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\nfl6v2pw36-{0}-ojo5kn4oka-ojo5kn4oka.gz
 C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\1vhqy9p1e5-{0}-epaw4qnc1v-epaw4qnc1v.gz
 C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\yvvp1brqfp-{0}-n5j8a7qi98-n5j8a7qi98.gz
-C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\nl0rm34ciw-{0}-fm47cnadqj-fm47cnadqj.gz
-C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\a93q6zso4d-{0}-wvxfeb3vjo-wvxfeb3vjo.gz
 C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\rt09et9npq-{0}-5frlxs637v-5frlxs637v.gz
-C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\01z1o4ny5a-{0}-ezam0la625-ezam0la625.gz
 C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\p53sdx5fi0-{0}-dp9t5ysb6q-dp9t5ysb6q.gz
 C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\staticwebassets.build.json
 C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\staticwebassets.build.json.cache
@@ -275,6 +272,11 @@ C:\Users\jakem\OneDrive\文档\E-Budget Web Application type\BFARBudget\obj\Debu
 C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\tgs5ggzzo6-{0}-j5d1pfxdik-j5d1pfxdik.gz
 C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\vz0cokxbpx-{0}-8hjr5mt9lu-8hjr5mt9lu.gz
 C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\b430mlj0jw-{0}-0i7ywf5gzu-0i7ywf5gzu.gz
-C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\19s6hj2r3m-{0}-en3h549yxb-en3h549yxb.gz
-C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\65gmiqm6zl-{0}-qx1ueva6uc-qx1ueva6uc.gz
-C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\2h4xr558uk-{0}-0pttgmpwun-0pttgmpwun.gz
+C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\BFARBudget.sourcelink.json
+C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\2h4xr558uk-{0}-8avwnd9xd6-8avwnd9xd6.gz
+C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\01z1o4ny5a-{0}-fa9v9rfnl9-fa9v9rfnl9.gz
+C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\nl0rm34ciw-{0}-c3yddnirkq-c3yddnirkq.gz
+C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\a93q6zso4d-{0}-4j5dbmyvxa-4j5dbmyvxa.gz
+C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\65gmiqm6zl-{0}-epiw68k4gm-epiw68k4gm.gz
+C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\d19ua16qpi-{0}-b98ttoa583-b98ttoa583.gz
+C:\Users\Lehana\OneDrive\Documents\E-Budget Web Application type\BFARBudget\obj\Debug\net10.0\compressed\19s6hj2r3m-{0}-31nab8v27g-31nab8v27g.gz
