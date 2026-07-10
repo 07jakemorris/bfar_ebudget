@@ -4,10 +4,6 @@ namespace BFAR.EBudget.Data
 {
     public class ObligationsData
     {
-        public static string department_code = "05-000-00-00000 - Department of Agriculture";
-        public static string agency_code = "05-003-00-00000 - Bureau of Fisheries and Aquatic Resources";
-        public static string operating_unit = "05-003-03-00000 - Regional Offices";
-        public static string lower_level_unit = "05-003-03-00008 - Region VIII";
         private readonly string _connStr;
 
         public ObligationsData(string connectionString)
@@ -102,6 +98,83 @@ namespace BFAR.EBudget.Data
             GetItems("SELECT id, CONCAT(name, ' – ', position) FROM signatory WHERE rc_id = @id AND is_active = 1 ORDER BY name",
                 new[] { new MySqlParameter("@id", rcId) });
 
+        // ── Get full obligation detail for ORS print ─────────────────────────
+        public ObligationDetail? GetObligationDetail(int id)
+        {
+            const string sql = @"
+                SELECT  o.id, o.ors_no, DATE_FORMAT(o.ors_date,'%m/%d/%Y') AS ors_date,
+                        o.payee, o.particulars, o.amount, o.status,
+                        rc.code  AS rc_code,  rc.name  AS rc_name,
+                        s.name   AS sig_name, s.position AS sig_pos,
+                        o.fund_cluster, o.financing_source, o.authorization_code,
+                        o.fund_category, o.full_funding_source,
+                        p.id     AS program_id,       p.name  AS program_name,
+                        pc.id    AS project_cat_id,    pc.name AS project_cat_name,
+                        psc.id   AS project_subcat_id, psc.name AS project_subcat_name,
+                        ec.id    AS expense_class_id,
+                        ec.code  AS expense_class_code, ec.name AS expense_class_name,
+                        ac.code  AS account_code,       ac.description AS account_desc,
+                        sac.code AS sub_account_code,   sac.description AS sub_account_desc
+                FROM    obligations o
+                LEFT JOIN responsibility_center rc  ON rc.id  = o.rc_id
+                LEFT JOIN signatory              s   ON s.id   = o.signatory_id
+                LEFT JOIN account_code           ac  ON ac.id  = o.account_code_id
+                LEFT JOIN expense_type           et  ON et.id  = ac.expense_type_id
+                LEFT JOIN expense_class          ec  ON ec.id  = et.expense_class_id
+                LEFT JOIN sub_account_code       sac ON sac.id = o.sub_account_code_id
+                LEFT JOIN activity_level         al  ON al.id  = o.activity_level_id
+                LEFT JOIN project_sub_category   psc ON psc.id = al.project_sub_category_id
+                LEFT JOIN project_category       pc  ON pc.id  = NULLIF(psc.project_category_id, 0)
+                LEFT JOIN program                p   ON p.id   = COALESCE(pc.program_id, psc.program_id)
+                WHERE   o.id = @id
+                LIMIT   1";
+
+            using var conn = new MySqlConnection(_connStr);
+            using var cmd  = new MySqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@id", id);
+            conn.Open();
+            using var rdr = cmd.ExecuteReader();
+            if (!rdr.Read()) return null;
+
+            return new ObligationDetail
+            {
+                Id                 = rdr.GetInt32(rdr.GetOrdinal("id")),
+                OrsNo              = rdr.GetValue(rdr.GetOrdinal("ors_no")).ToString() ?? "",
+                OrsDate            = rdr.GetValue(rdr.GetOrdinal("ors_date")).ToString() ?? "",
+                Payee              = rdr.GetValue(rdr.GetOrdinal("payee")).ToString() ?? "",
+                Particulars        = rdr.GetValue(rdr.GetOrdinal("particulars")).ToString() ?? "",
+                Amount             = rdr.GetDecimal(rdr.GetOrdinal("amount")),
+                Status             = rdr.GetValue(rdr.GetOrdinal("status")).ToString() ?? "",
+                RcCode             = rdr.IsDBNull(rdr.GetOrdinal("rc_code"))  ? "" : rdr.GetValue(rdr.GetOrdinal("rc_code")).ToString()!,
+                RcName             = rdr.IsDBNull(rdr.GetOrdinal("rc_name"))  ? "" : rdr.GetValue(rdr.GetOrdinal("rc_name")).ToString()!,
+                SignatoryName      = rdr.IsDBNull(rdr.GetOrdinal("sig_name")) ? "" : rdr.GetValue(rdr.GetOrdinal("sig_name")).ToString()!,
+                SignatoryPosition  = rdr.IsDBNull(rdr.GetOrdinal("sig_pos"))  ? "" : rdr.GetValue(rdr.GetOrdinal("sig_pos")).ToString()!,
+                FundCluster        = rdr.IsDBNull(rdr.GetOrdinal("fund_cluster"))       ? "" : rdr.GetValue(rdr.GetOrdinal("fund_cluster")).ToString()!,
+                FinancingSource    = rdr.IsDBNull(rdr.GetOrdinal("financing_source"))   ? "" : rdr.GetValue(rdr.GetOrdinal("financing_source")).ToString()!,
+                AuthorizationCode  = rdr.IsDBNull(rdr.GetOrdinal("authorization_code")) ? "" : rdr.GetValue(rdr.GetOrdinal("authorization_code")).ToString()!,
+                FundCategory       = rdr.IsDBNull(rdr.GetOrdinal("fund_category"))      ? "" : rdr.GetValue(rdr.GetOrdinal("fund_category")).ToString()!,
+                FullFundingSource  = rdr.IsDBNull(rdr.GetOrdinal("full_funding_source")) ? "" : rdr.GetValue(rdr.GetOrdinal("full_funding_source")).ToString()!,
+
+                ProgramId          = rdr.IsDBNull(rdr.GetOrdinal("program_id")) ? (int?)null : rdr.GetInt32(rdr.GetOrdinal("program_id")),
+                ProgramName        = rdr.IsDBNull(rdr.GetOrdinal("program_name")) ? "" : rdr.GetValue(rdr.GetOrdinal("program_name")).ToString()!,
+
+                ProjectCategoryId   = rdr.IsDBNull(rdr.GetOrdinal("project_cat_id")) ? (int?)null : rdr.GetInt32(rdr.GetOrdinal("project_cat_id")),
+                ProjectCategoryName = rdr.IsDBNull(rdr.GetOrdinal("project_cat_name")) ? "" : rdr.GetValue(rdr.GetOrdinal("project_cat_name")).ToString()!,
+
+                ProjectSubCategoryId   = rdr.IsDBNull(rdr.GetOrdinal("project_subcat_id")) ? (int?)null : rdr.GetInt32(rdr.GetOrdinal("project_subcat_id")),
+                ProjectSubCategoryName = rdr.IsDBNull(rdr.GetOrdinal("project_subcat_name")) ? "" : rdr.GetValue(rdr.GetOrdinal("project_subcat_name")).ToString()!,
+
+                ExpenseClassId     = rdr.IsDBNull(rdr.GetOrdinal("expense_class_id")) ? (int?)null : rdr.GetInt32(rdr.GetOrdinal("expense_class_id")),
+                ExpenseClassCode   = rdr.IsDBNull(rdr.GetOrdinal("expense_class_code")) ? "" : rdr.GetValue(rdr.GetOrdinal("expense_class_code")).ToString()!,
+                ExpenseClassName   = rdr.IsDBNull(rdr.GetOrdinal("expense_class_name")) ? "" : rdr.GetValue(rdr.GetOrdinal("expense_class_name")).ToString()!,
+
+                AccountCode        = rdr.IsDBNull(rdr.GetOrdinal("account_code"))   ? "" : rdr.GetValue(rdr.GetOrdinal("account_code")).ToString()!,
+                AccountDesc        = rdr.IsDBNull(rdr.GetOrdinal("account_desc"))   ? "" : rdr.GetValue(rdr.GetOrdinal("account_desc")).ToString()!,
+                SubAccountCode     = rdr.IsDBNull(rdr.GetOrdinal("sub_account_code")) ? "" : rdr.GetValue(rdr.GetOrdinal("sub_account_code")).ToString()!,
+                SubAccountDesc     = rdr.IsDBNull(rdr.GetOrdinal("sub_account_desc")) ? "" : rdr.GetValue(rdr.GetOrdinal("sub_account_desc")).ToString()!,
+            };
+        }
+
         // ── Save obligation ───────────────────────────────────────────────────
         public int SaveObligation(ObligationModel model)
         {
@@ -112,7 +185,6 @@ namespace BFAR.EBudget.Data
                      activity_level_id, account_code_id, sub_account_code_id,
                      fund_id, fund_cluster, financing_source,
                      authorization_code, fund_category, full_funding_source,
-                     department_code, agency_code, operating_unit, lower_level_unit,
                      amount, status, created_by)
                 VALUES
                     (@ors_no, @ors_date, @payee, @creditor_type, @quarter,
@@ -120,7 +192,6 @@ namespace BFAR.EBudget.Data
                      @activity_level_id, @account_code_id, @sub_account_code_id,
                      @fund_id, @fund_cluster, @financing_source,
                      @authorization_code, @fund_category, @full_funding_source,
-                     @department_code, @agency_code, @operating_unit, @lower_level_unit,
                      @amount, 'Pending', @created_by);
                 SELECT LAST_INSERT_ID();";
 
@@ -143,10 +214,6 @@ namespace BFAR.EBudget.Data
             cmd.Parameters.AddWithValue("@authorization_code",  model.AuthorizationCode  ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@fund_category",       model.FundCategory       ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@full_funding_source", model.FullFundingSource  ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@department_code", department_code);
-            cmd.Parameters.AddWithValue("@agency_code", agency_code);
-            cmd.Parameters.AddWithValue("@operating_unit", operating_unit);
-            cmd.Parameters.AddWithValue("@lower_level_unit", lower_level_unit);
             cmd.Parameters.AddWithValue("@activity_level_id",  model.ActivityLevelId);
             cmd.Parameters.AddWithValue("@account_code_id",    model.AccountCodeId);
             cmd.Parameters.AddWithValue("@sub_account_code_id",
@@ -240,6 +307,44 @@ namespace BFAR.EBudget.Data
     // ── Models ────────────────────────────────────────────────────────────────
 
     public record DropdownItem(string Value, string Text);
+
+    public class ObligationDetail
+    {
+        public int     Id                { get; set; }
+        public string  OrsNo             { get; set; } = "";
+        public string  OrsDate           { get; set; } = "";
+        public string  Payee             { get; set; } = "";
+        public string  Particulars       { get; set; } = "";
+        public decimal Amount            { get; set; }
+        public string  Status            { get; set; } = "";
+        public string  RcCode            { get; set; } = "";
+        public string  RcName            { get; set; } = "";
+        public string  SignatoryName     { get; set; } = "";
+        public string  SignatoryPosition { get; set; } = "";
+        public string  FundCluster       { get; set; } = "";
+        public string  FinancingSource   { get; set; } = "";
+        public string  AuthorizationCode { get; set; } = "";
+        public string  FundCategory      { get; set; } = "";
+        public string  FullFundingSource { get; set; } = "";
+
+        // Program / Project hierarchy (resolved from obligations.activity_level_id)
+        // NOTE: these tables have no separate "code" column — their `name`
+        // field already stores the full "310100000000 - Fisheries..." string.
+        public int?    ProgramId              { get; set; }
+        public string  ProgramName            { get; set; } = "";
+        public int?    ProjectCategoryId      { get; set; }
+        public string  ProjectCategoryName    { get; set; } = "";
+        public int?    ProjectSubCategoryId   { get; set; }
+        public string  ProjectSubCategoryName { get; set; } = "";
+
+        public int?    ExpenseClassId    { get; set; }
+        public string  ExpenseClassCode  { get; set; } = "";
+        public string  ExpenseClassName  { get; set; } = "";
+        public string  AccountCode       { get; set; } = "";
+        public string  AccountDesc       { get; set; } = "";
+        public string  SubAccountCode    { get; set; } = "";
+        public string  SubAccountDesc    { get; set; } = "";
+    }
 
     public class FundDetail
     {

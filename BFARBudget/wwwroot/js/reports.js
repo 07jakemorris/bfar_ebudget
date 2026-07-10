@@ -274,15 +274,20 @@ function renderTree(clusters) {
 
         (auth.fundCategories || []).forEach(function(fc) {
           var fcRowId = 'row-' + (_rowIdCounter++);
-          html += treeRow(fc.label, fc, 'lvl-fund-category', 3, fcRowId, authRowId, fc.expenseClasses && fc.expenseClasses.length > 0);
+          html += treeRow(fc.label, fc, 'lvl-fund-category', 3, fcRowId, authRowId, fc.rcNodes && fc.rcNodes.length > 0);
 
-          (fc.expenseClasses || []).forEach(function(ec) {
-            var ecRowId = 'row-' + (_rowIdCounter++);
-            html += treeRow(ec.label, ec, 'lvl-expense-class', 4, ecRowId, fcRowId, ec.accountCodes && ec.accountCodes.length > 0);
+          (fc.rcNodes || []).forEach(function(rc) {
+            var rcRowId = 'row-' + (_rowIdCounter++);
+            html += treeRow(rc.label, rc, 'lvl-rc', 4, rcRowId, fcRowId, rc.expenseClasses && rc.expenseClasses.length > 0);
 
-            (ec.accountCodes || []).forEach(function(acct) {
-              totalAccountRows++;
-              html += treeRow(acct.label, acct, 'lvl-account-code', 5, null, ecRowId, false);
+            (rc.expenseClasses || []).forEach(function(ec) {
+              var ecRowId = 'row-' + (_rowIdCounter++);
+              html += treeRow(ec.label, ec, 'lvl-expense-class', 5, ecRowId, rcRowId, ec.accountCodes && ec.accountCodes.length > 0);
+
+              (ec.accountCodes || []).forEach(function(acct) {
+                totalAccountRows++;
+                html += treeRow(acct.label, acct, 'lvl-account-code', 6, null, ecRowId, false);
+              });
             });
           });
         });
@@ -299,7 +304,7 @@ function renderTree(clusters) {
 }
 
 function treeRow(label, node, levelClass, depth, rowId, parentId, hasChildren) {
-  var indent = 'tree-indent-' + Math.min(depth, 4);
+  var indent = 'tree-indent-' + Math.min(depth, 6);
   var toggleHtml = hasChildren
     ? '<button class="toggle-btn" onclick="toggleRow(\'' + rowId + '\', this)" aria-label="Toggle">▾</button>'
     : '<span style="display:inline-block;width:22px"></span>';
@@ -420,10 +425,13 @@ function exportCSV() {
             addRow(auth.label, auth, 2);
             (auth.fundCategories || []).forEach(function(fc) {
               addRow(fc.label, fc, 3);
-              (fc.expenseClasses || []).forEach(function(ec) {
-                addRow(ec.label, ec, 4);
-                (ec.accountCodes || []).forEach(function(acct) {
-                  addRow(acct.label, acct, 5);
+              (fc.rcNodes || []).forEach(function(rc) {
+                addRow(rc.label, rc, 4);
+                (rc.expenseClasses || []).forEach(function(ec) {
+                  addRow(ec.label, ec, 5);
+                  (ec.accountCodes || []).forEach(function(acct) {
+                    addRow(acct.label, acct, 6);
+                  });
                 });
               });
             });

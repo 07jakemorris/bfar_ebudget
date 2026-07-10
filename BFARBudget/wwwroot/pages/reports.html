@@ -87,14 +87,17 @@
     .lvl-fund-category td { background: #f5b87a; font-weight: 800; border-top: 2px solid #c97a2e; border-bottom: 2px solid #c97a2e; }
 
     /* Hierarchy levels — expense chain (cool tints, nested under fund category) */
-    .lvl-expense-class td { background: #e8f4f8; font-weight: 700; color: #0a3d4a; }
+    .lvl-rc            td { background: #d4edf4; font-weight: 700; color: #0a3d4a; border-top: 1px solid #a8d4dc; }
+    .lvl-expense-class td { background: #e8f4f8; font-weight: 600; color: #0a3d4a; }
     .lvl-account-code  td { background: #ffffff; font-weight: 400; }
-    .lvl-account-code td:first-child { padding-left: 2.5rem; color: var(--text-secondary); }
+    .lvl-account-code td:first-child { padding-left: 3.5rem; color: var(--text-secondary); }
 
     .tree-indent-1 { padding-left: 1.25rem !important; }
     .tree-indent-2 { padding-left: 2rem !important; }
     .tree-indent-3 { padding-left: 2.75rem !important; }
     .tree-indent-4 { padding-left: 3.5rem !important; }
+    .tree-indent-5 { padding-left: 4.25rem !important; }
+    .tree-indent-6 { padding-left: 5rem !important; }
 
     .toggle-btn {
       display: inline-flex; align-items: center; justify-content: center;
@@ -131,7 +134,7 @@
       <div class="page-header">
         <div>
           <h1>Budget Reports</h1>
-          <p>Summary of Appropriations, Allotments, Obligations, Disbursements and Balances By Object of Expenditures</p>
+          <p>Statement of Allotment, Obligations, Disbursements and Balances (SAAODB)</p>
         </div>
         <div style="display:flex;gap:10px;">
           <button class="btn" onclick="clearFilters()">
@@ -230,7 +233,7 @@
       <!-- Tree Report Table -->
       <div class="card">
         <div class="card-header">
-          <h2>Financial Accountability Report No. 1.A</h2>
+          <h2>Fund &amp; Account Code Breakdown</h2>
           <span class="badge badge-teal" id="row-count">Loading…</span>
         </div>
         <div class="tree-table-wrap">

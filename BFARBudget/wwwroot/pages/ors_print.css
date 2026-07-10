@@ -2,40 +2,44 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: Arial Narrow, Helvetica, sans-serif;
       font-size: 9pt;
       background: #e0e0e0;
       padding: 18px;
     }
 
     #toolbar {
-      max-width: 218mm;
+      max-width: 8.5in;
       margin: 0 auto 14px;
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
       align-items: center;
+      justify-content: space-between;
     }
 
     #toolbar-title {
-      font-size: 17px;
-      font-weight: bold;
-      color: #fff;
-      text-shadow: 0 1px 3px #0006;
-      margin-right: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #555;
     }
 
     .tbtn {
-      padding: 7px 14px;
-      font-size: 12px;
+      padding: 8px 16px;
+      font-size: 12.5px;
       font-weight: bold;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
       transition: filter .15s;
       white-space: nowrap;
+      box-shadow: 0 1px 3px rgba(0,0,0,.15);
     }
-    .tbtn:hover { filter: brightness(1.12); }
+    .tbtn:hover  { filter: brightness(1.08); }
+    .tbtn:active { filter: brightness(0.95); }
+
+    .tbtn-back  { background: #ca4242;    color: #f1f1f1; border: 1px solid #bbb; }
+    .tbtn-print { background: #00af75; color: #ffffff; }
 
     #ors-paper {
       width: 8.5in;
@@ -55,8 +59,8 @@
     }
 
     .logo-wrap {
-      width: 58px;
-      height: 58px;
+      width: 70px;
+      height: 70px;
       flex-shrink: 0;
       margin-right: 9px;
     }
@@ -99,7 +103,7 @@
     }
     .date-row .date-ul {
       border: none; border-bottom: 1px solid #444;
-      font-size: 8pt; font-family: Arial, Helvetica, sans-serif, sans-serif;
+      font-size: 8pt; font-family: Arial Narrow, Helvetica, sans-serif, sans-serif;
       width: 95px; text-align: center;
       outline: none; padding-bottom: 1px; margin-left: 4px;
     }
@@ -117,7 +121,7 @@
     .info-tbl .lbl { font-weight: bold; white-space: nowrap; }
     .info-tbl .val input {
       border: none; outline: none;
-      font-size: 9pt; font-family: Arial, sans-serif; font-weight: bold;
+      font-size: 10pt; font-family: Arial Narrow, sans-serif; font-weight: bold;
       width: 235px;
     }
 
@@ -154,7 +158,7 @@
       min-height: 215px;
       border: none; outline: none;
       resize: none;
-      font-family: Arial, sans-serif;
+      font-family: Arial Narrow, sans-serif;
       font-size: 8pt; font-weight: bold;
       background: transparent;
       line-height: 1.45;
@@ -181,7 +185,7 @@
       flex: 1;
       outline: none;
       font-size: 8pt; font-weight: bold;
-      font-family: Arial, sans-serif;
+      font-family: Arial Narrow, sans-serif;
       line-height: 1.4;
       word-break: break-word;
       min-height: 17px;
@@ -202,7 +206,7 @@
     .amt-php-label {
       flex-shrink: 0;
       font-size: 8pt;
-      font-family: Arial, sans-serif;
+      font-family: Arial Narrow, sans-serif;
       line-height: 1.4;
       padding: 0 2px;
       user-select: none;
@@ -212,7 +216,7 @@
       flex: 1;
       outline: none;
       font-size: 8pt;
-      font-family: Arial, sans-serif;
+      font-family: Arial Narrow, sans-serif;
       text-align: right;
       line-height: 1.4;
       min-height: 17px;
@@ -283,7 +287,7 @@
       flex: 1;
       border: none; outline: none;
       font-size: 8pt; font-weight: bold;
-      font-family: Arial, sans-serif;
+      font-family: Arial Narrow, sans-serif;
       text-align: right; width: 100%;
       background: transparent;
     }
@@ -329,16 +333,16 @@
     .sig-name, .sig-pos { text-align: center; }
     .sig-name input {
       border: none; outline: none;
-      font-size: 9pt; font-weight: bold;
+      font-size: 10pt; font-weight: bold;
       color: #2e2e2e;
-      font-family: Arial, sans-serif;
+      font-family: Arial Narrow, sans-serif;
       text-align: center; width: 100%;
       background: transparent;
     }
     .sig-pos input {
       border: none; outline: none;
       font-size: 8.5pt; color: #2e2e2e;
-      font-family: Arial, sans-serif;
+      font-family: Arial Narrow, sans-serif;
       text-align: center; width: 100%;
       background: transparent;
     }

@@ -2,17 +2,160 @@
 const COLORS = ['#0070c0','#e07000','#000000'];
 const COLOR_LABELS = { '#0070c0':'Blue','#e07000':'Orange','#000000':'Black' };
 
-/* ── Default Fund Items ── */
-const DEFAULT_ITEMS = [
-  { desc:'01101101 - Specific Budget of the Agency (Current)',          color:'#353535', indent:0, amt:'', gap:0   },
-  { desc:'310200000000 - Fisheries Regulatory and Law Enforcement Program', color:'#353535', indent:1, amt:'', gap:220 },
-  { desc:'310200100000 - Coastal and Inland Fisheries Resource Management', color:'#353535', indent:2, amt:'', gap:0   },
-  { desc:'310200100004 - Coastal and Inland Fisheries Resource Management', color:'#353535', indent:3, amt:'', gap:0   },
-  { desc:'2 - Maintenance and Other Operating Expenses',                color:'#353535', indent:4, amt:'', gap:0   },
-  { desc:'5-02-05-020 - 01 - Telephone Expenses - Mobile',             color:'#353535', indent:4, amt:'6,000.00', gap:0   },
-];
+let fundItems = [];
 
-let fundItems = DEFAULT_ITEMS.map(i => ({ ...i }));
+/* ════════════════════════════════════════════
+   FETCH OBLIGATION DATA
+   Reads ?id=X from the URL (set by printORS() in
+   obligations.js) and fills every field from
+   GET /api/obligations/{id}.
+   ════════════════════════════════════════════ */
+function getIdFromQuery() {
+  return new URLSearchParams(window.location.search).get('id');
+}
+
+function formatPeso(n) {
+  const num = Number(n);
+  if (isNaN(num)) return '';
+  return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val || '';
+}
+
+async function loadObligationData(id) {
+  showStatusBanner('Loading obligation data…', 'info');
+  try {
+    const res = await fetch(`/api/obligations/${encodeURIComponent(id)}`);
+    if (res.status === 404) {
+      showStatusBanner('Obligation record not found.', 'error');
+      return;
+    }
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d.error || `Request failed (${res.status})`);
+    }
+    const d = await res.json();
+    populateFromDetail(d);
+    hideStatusBanner();
+  } catch (err) {
+    showStatusBanner('Could not load obligation data: ' + err.message, 'error');
+  }
+}
+
+/* Maps the flat ObligationDetail fields returned by the API onto the
+   form. NOTE: GetObligationDetail() currently only joins the Fund and
+   Expense-classification chain (fund category → expense class →
+   account code → sub-account code) — it does not join the
+   Program/Project/Activity tables, so that part of the hierarchy can't
+   be shown here yet. Extend the SQL in ObligationsData.cs if you want
+   those rows included too. */
+function populateFromDetail(d) {
+  setVal('ors-no', d.orsNo);
+  setVal('ors-date', d.orsDate);
+  setVal('payee', d.payee);
+  document.getElementById('resp-center').value  = d.rcCode || d.rcName || '';
+  document.getElementById('particulars').value  = d.particulars || '';
+  setVal('grand-total', formatPeso(d.amount));
+
+  /* Box A signatory comes from the record's assigned Signatory.
+     Box B (right side) has no per-record data from the API, so it's
+     left as whatever is currently in the field (defaults to the
+     Budget Section OIC set in the HTML) — edit sig2n/sig2p directly
+     if that officer changes. */
+  setVal('sig1n', (d.signatoryName || '').toUpperCase());
+  setVal('sig1p', d.signatoryPosition || '');
+
+  fundItems = buildFundItemsFromDetail(d);
+  renderFund();
+  syncRespWidth();
+  syncRowHeights();
+}
+
+function buildFundItemsFromDetail(d) {
+  const amtStr = formatPeso(d.amount);
+  const items = [];
+  const BLANK = '<-blank->';
+
+  /* Row 1: Fund Category — unchanged, already correct */
+  const line1 = [d.fullFundingSource, d.fundCategory].filter(Boolean).join(' - ');
+  items.push({ desc: line1 || BLANK, color: '#474747', indent: 0, amt: '', gap: 0 });
+
+  /* Row 2: Program — name already contains the full "code - name" string
+     (e.g. "310100000000 - Fisheries Development Program"), no separate code column */
+  items.push({ desc: d.programName || BLANK, color: '#474747', indent: 1, amt: '', gap: 160 });
+
+  /* Row 3: Project Category — show <-blank-> when the record has none
+     (a sub-category can attach directly to a Program with no category) */
+  items.push({ desc: d.projectCategoryName || BLANK, color: '#474747', indent: 2, amt: '', gap: 0 });
+
+  /* Row 4: Project Sub-Category */
+  items.push({ desc: d.projectSubCategoryName || BLANK, color: '#474747', indent: 3, amt: '', gap: 0 });
+
+  /* Row 5: Expense Class — id - code - name, e.g. "2 - MOOE - Maintenance and Other Operating Expenses" */
+  const line5 = [d.expenseClassId, d.expenseClassCode, d.expenseClassName]
+    .filter(v => v !== null && v !== undefined && v !== '')
+    .join(' - ');
+  items.push({ desc: line5 || BLANK, color: '#474747', indent: 4, amt: '', gap: 0 });
+
+  /* Row 6: Account Code + description. If a sub-account exists, its code
+     is inserted right after the account code, and its description is
+     appended at the end:
+       no sub-account:   "5-02-05-020 - Telephone Expenses"
+       with sub-account: "5-02-05-020 - 01 - Telephone Expenses - Mobile"
+     The peso amount always lands on this row. */
+  const acctParts = [d.accountCode];
+  if (d.subAccountCode) acctParts.push(d.subAccountCode);
+  acctParts.push(d.accountDesc);
+  let line6 = acctParts.filter(Boolean).join(' - ');
+  if (d.subAccountDesc) line6 += ' - ' + d.subAccountDesc;
+  items.push({ desc: line6 || BLANK, color: '#353535', indent: 4, amt: amtStr, gap: 0 });
+
+  return items;
+}
+
+/* ── Status banner (loading / error) ── */
+function showStatusBanner(msg, type) {
+  hideStatusBanner();
+  const b = document.createElement('div');
+  b.id = 'ors-status-banner';
+  const styles = {
+    info:  { bg:'#eef6ff', border:'#b6d4fe', color:'#0a3d6b' },
+    error: { bg:'#fdecea', border:'#f5c2c0', color:'#7a1712' }
+  };
+  const s = styles[type] || styles.info;
+  b.style.cssText = `max-width:8.5in;margin:0 auto 10px;padding:10px 16px;background:${s.bg};border:1px solid ${s.border};border-radius:6px;font:13px Arial,sans-serif;color:${s.color};text-align:center;`;
+  b.textContent = msg;
+  document.body.insertBefore(b, document.body.firstChild);
+}
+function hideStatusBanner() {
+  const old = document.getElementById('ors-status-banner');
+  if (old) old.remove();
+}
+
+/* ── Toolbar actions ── */
+
+/* Print button just triggers the browser's native print dialog — the
+   @page CSS rule already forces 8.5in x 13in output, and #toolbar is
+   hidden in print, so this doubles as "Save as PDF" via the dialog's
+   destination picker. */
+// (Print button calls window.print() directly — no wrapper needed.)
+
+/* Back button: this page is normally opened in a new tab via
+   window.open() from Obligation Records (see printORS() in
+   obligations.js). Closing that tab returns focus to the original tab,
+   which still has the table exactly as the user left it. If there's no
+   opener (e.g. the page was opened directly via URL/bookmark), fall
+   back to navigating to the records page instead. */
+function goBackToRecords() {
+  if (window.opener && !window.opener.closed) {
+    window.close();
+  } else {
+    window.location.href = 'obligations.html';
+  }
+}
 
 /* ── Render Fund List (+ parallel Amount column) ── */
 function renderFund() {
@@ -228,6 +371,13 @@ syncRespWidth();
 syncRowHeights();
 window.addEventListener('load', () => { syncRespWidth(); syncRowHeights(); });
 window.addEventListener('resize', () => { syncRespWidth(); syncRowHeights(); });
+
+const _obligationId = getIdFromQuery();
+if (_obligationId) {
+  loadObligationData(_obligationId);
+} else {
+  showStatusBanner('No obligation specified — open this page via the Print button in Obligation Records.', 'error');
+}
 
 /* Sync textarea heights to fund-list on resize */
 const ro = new ResizeObserver(() => {

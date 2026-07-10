@@ -36,6 +36,22 @@ namespace BFAR.EBudget.Controllers
             }
         }
 
+        // GET /api/obligations/{id} — full detail for ORS print
+        [HttpGet("{id}")]
+        public IActionResult GetById(int id)
+        {
+            try
+            {
+                var detail = _db.GetObligationDetail(id);
+                if (detail == null) return NotFound(new { error = "Obligation not found." });
+                return Ok(detail);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
         // GET /api/obligations
         [HttpGet]
         public IActionResult GetAll()

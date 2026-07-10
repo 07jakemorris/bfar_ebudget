@@ -106,19 +106,20 @@ namespace BFAR.EBudget.Controllers
 
                             foreach (var fund in authGroup)
                             {
-                                var expenseClasses = GetExpenseClassNodes(fund.id, rcId, classId, fiscalYear);
-                                var totals = SumTotals(expenseClasses);
+                                // Returns RC → Expense Class → Account Code hierarchy
+                                var rcNodes = GetExpenseClassNodes(fund.id, rcId, classId, fiscalYear);
+                                var totals  = SumTotals(rcNodes);
 
                                 fundCategoryNodes.Add(new
                                 {
-                                    label = fund.category,
-                                    allotment    = totals.allotment,
-                                    obligations  = totals.obligations,
+                                    label         = fund.category,
+                                    allotment     = totals.allotment,
+                                    obligations   = totals.obligations,
                                     disbursements = totals.disbursements,
-                                    unpaid       = totals.unpaid,
-                                    unobligated  = totals.allotment - totals.obligations,
-                                    earmarks     = totals.earmarks,
-                                    expenseClasses
+                                    unpaid        = totals.unpaid,
+                                    unobligated   = totals.allotment - totals.obligations,
+                                    earmarks      = totals.earmarks,
+                                    rcNodes       // RC → Expense Class → Account Code
                                 });
                             }
 
@@ -160,24 +161,29 @@ namespace BFAR.EBudget.Controllers
             catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
         }
 
-        // ── Helper: expense class + account code nodes for one fund ──────────
+        // ── Helper: RC → Expense Class → Account Code nodes for one fund ──────
         private List<object> GetExpenseClassNodes(int fundId, string? rcId, string? classId, string? fiscalYear)
         {
             string rcFilter    = (!string.IsNullOrWhiteSpace(rcId) && rcId != "all") ? $"AND a.rc_id = {int.Parse(rcId)}" : "";
             string classFilter = (!string.IsNullOrWhiteSpace(classId) && classId != "all") ? $"AND a.expense_class_id = {int.Parse(classId)}" : "";
             string fyFilter    = (!string.IsNullOrWhiteSpace(fiscalYear) && fiscalYear != "all") ? $"AND a.fiscal_year = '{fiscalYear.Replace("'", "")}'" : "";
 
+            // Pull allotment rows grouped by RC → Expense Class → Account Code
             string sql = $@"
-                SELECT ec.id, ec.code, ec.name,
+                SELECT rc.id AS rc_id, rc.name AS rc_name,
+                       ec.id, ec.code, ec.name,
                        ac.id AS acct_id, ac.code AS acct_code, ac.description AS acct_desc,
                        COALESCE(a.amount, 0) AS allotment
                 FROM   allotments a
-                INNER JOIN expense_class ec ON ec.id = a.expense_class_id
-                LEFT  JOIN account_code  ac ON ac.id = a.account_code_id
+                INNER JOIN responsibility_center rc ON rc.id = a.rc_id
+                INNER JOIN expense_class         ec ON ec.id = a.expense_class_id
+                LEFT  JOIN account_code          ac ON ac.id = a.account_code_id
                 WHERE  a.fund_id = {fundId} {rcFilter} {classFilter} {fyFilter}
-                ORDER BY ec.name, ac.code";
+                ORDER BY rc.name, ec.name, ac.code";
 
-            var rows = new List<(int ecId, string ecCode, string ecName, int? acctId, string acctCode, string acctDesc, decimal allotment)>();
+            var rows = new List<(int rcId, string rcName, int ecId, string ecCode, string ecName,
+                                  int? acctId, string acctCode, string acctDesc, decimal allotment)>();
+
             using (var conn = Conn())
             {
                 conn.Open();
@@ -187,56 +193,91 @@ namespace BFAR.EBudget.Controllers
                     rows.Add((
                         rdr.GetInt32(0),
                         rdr.GetValue(1).ToString() ?? "",
-                        rdr.GetValue(2).ToString() ?? "",
-                        rdr.IsDBNull(3) ? (int?)null : rdr.GetInt32(3),
-                        rdr.IsDBNull(4) ? "" : rdr.GetValue(4).ToString() ?? "",
-                        rdr.IsDBNull(5) ? "" : rdr.GetValue(5).ToString() ?? "",
-                        rdr.GetDecimal(6)
+                        rdr.GetInt32(2),
+                        rdr.GetValue(3).ToString() ?? "",
+                        rdr.GetValue(4).ToString() ?? "",
+                        rdr.IsDBNull(5) ? (int?)null : rdr.GetInt32(5),
+                        rdr.IsDBNull(6) ? "" : rdr.GetValue(6).ToString() ?? "",
+                        rdr.IsDBNull(7) ? "" : rdr.GetValue(7).ToString() ?? "",
+                        rdr.GetDecimal(8)
                     ));
             }
 
-            var classNodes = new List<object>();
-            var byClass = rows.GroupBy(r => new { r.ecId, r.ecCode, r.ecName });
+            // Group: RC → Expense Class → Account Code
+            var rcNodes = new List<object>();
+            var byRC = rows.GroupBy(r => new { r.rcId, r.rcName });
 
-            foreach (var cls in byClass)
+            foreach (var rcGroup in byRC)
             {
-                var acctNodes = new List<object>();
-                foreach (var r in cls)
-                {
-                    if (r.acctId == null) continue;
+                var classNodes = new List<object>();
+                var byClass    = rcGroup.GroupBy(r => new { r.ecId, r.ecCode, r.ecName });
 
-                    var fig = GetObligationFigures(r.acctId.Value, rcId, fiscalYear);
-                    acctNodes.Add(new
+                foreach (var cls in byClass)
+                {
+                    var acctNodes = new List<object>();
+                    foreach (var r in cls)
                     {
-                        label         = $"{r.acctCode} - {r.acctDesc}",
-                        accountCodeId = r.acctId,
-                        allotment     = r.allotment,
-                        obligations   = fig.obligations,
-                        disbursements = fig.disbursements,
-                        unpaid        = fig.unpaid,
-                        unobligated   = r.allotment - fig.obligations,
-                        earmarks      = fig.earmarks
+                        if (r.acctId == null) continue;
+                        var fig = GetObligationFigures(r.acctId.Value, rcGroup.Key.rcId.ToString(), fiscalYear);
+                        acctNodes.Add(new
+                        {
+                            label         = $"{r.acctCode} - {r.acctDesc}",
+                            accountCodeId = r.acctId,
+                            allotment     = r.allotment,
+                            obligations   = fig.obligations,
+                            disbursements = fig.disbursements,
+                            unpaid        = fig.unpaid,
+                            unobligated   = r.allotment - fig.obligations,
+                            earmarks      = fig.earmarks
+                        });
+                    }
+
+                    decimal clsAllot  = acctNodes.Sum(n => Get<decimal>(n, "allotment"));
+                    decimal clsObl    = acctNodes.Sum(n => Get<decimal>(n, "obligations"));
+                    decimal clsDisb   = acctNodes.Sum(n => Get<decimal>(n, "disbursements"));
+                    decimal clsUnpaid = acctNodes.Sum(n => Get<decimal>(n, "unpaid"));
+                    decimal clsEm     = acctNodes.Sum(n => Get<decimal>(n, "earmarks"));
+
+                    classNodes.Add(new
+                    {
+                        label          = $"{cls.Key.ecCode} - {cls.Key.ecName}",
+                        expenseClassId = cls.Key.ecId,
+                        allotment      = clsAllot,
+                        obligations    = clsObl,
+                        disbursements  = clsDisb,
+                        unpaid         = clsUnpaid,
+                        unobligated    = clsAllot - clsObl,
+                        earmarks       = clsEm,
+                        accountCodes   = acctNodes
                     });
                 }
 
-                decimal clsAllot = acctNodes.Sum(n => (decimal)n.GetType().GetProperty("allotment")!.GetValue(n)!);
-                decimal clsObl   = acctNodes.Sum(n => (decimal)n.GetType().GetProperty("obligations")!.GetValue(n)!);
-                decimal clsDisb  = acctNodes.Sum(n => (decimal)n.GetType().GetProperty("disbursements")!.GetValue(n)!);
-                decimal clsUnpaid = acctNodes.Sum(n => (decimal)n.GetType().GetProperty("unpaid")!.GetValue(n)!);
-                decimal clsEm    = acctNodes.Sum(n => (decimal)n.GetType().GetProperty("earmarks")!.GetValue(n)!);
+                decimal rcAllot  = classNodes.Sum(n => Get<decimal>(n, "allotment"));
+                decimal rcObl    = classNodes.Sum(n => Get<decimal>(n, "obligations"));
+                decimal rcDisb   = classNodes.Sum(n => Get<decimal>(n, "disbursements"));
+                decimal rcUnpaid = classNodes.Sum(n => Get<decimal>(n, "unpaid"));
+                decimal rcEm     = classNodes.Sum(n => Get<decimal>(n, "earmarks"));
 
-                classNodes.Add(new
+                rcNodes.Add(new
                 {
-                    label = $"{cls.Key.ecCode} - {cls.Key.ecName}",
-                    expenseClassId = cls.Key.ecId,
-                    allotment = clsAllot, obligations = clsObl, disbursements = clsDisb,
-                    unpaid = clsUnpaid, unobligated = clsAllot - clsObl, earmarks = clsEm,
-                    accountCodes = acctNodes
+                    label          = rcGroup.Key.rcName,
+                    rcId           = rcGroup.Key.rcId,
+                    allotment      = rcAllot,
+                    obligations    = rcObl,
+                    disbursements  = rcDisb,
+                    unpaid         = rcUnpaid,
+                    unobligated    = rcAllot - rcObl,
+                    earmarks       = rcEm,
+                    expenseClasses = classNodes
                 });
             }
 
-            return classNodes;
+            return rcNodes;
         }
+
+        // Generic property getter helper
+        private static T Get<T>(object obj, string prop) =>
+            (T)obj.GetType().GetProperty(prop)!.GetValue(obj)!;
 
         // ── Helper: obligation/disbursement/earmark figures per account code ──
         private (decimal obligations, decimal disbursements, decimal unpaid, decimal earmarks)
@@ -268,17 +309,16 @@ namespace BFAR.EBudget.Controllers
 
         // ── Helper: sum totals from a list of expense class nodes ────────────
         private (decimal allotment, decimal obligations, decimal disbursements, decimal unpaid, decimal earmarks)
-            SumTotals(List<object> expenseClassNodes)
+            SumTotals(List<object> nodes)
         {
             decimal allot = 0, obl = 0, disb = 0, unpaid = 0, em = 0;
-            foreach (var node in expenseClassNodes)
+            foreach (var node in nodes)
             {
-                var t = node.GetType();
-                allot  += (decimal)t.GetProperty("allotment")!.GetValue(node)!;
-                obl    += (decimal)t.GetProperty("obligations")!.GetValue(node)!;
-                disb   += (decimal)t.GetProperty("disbursements")!.GetValue(node)!;
-                unpaid += (decimal)t.GetProperty("unpaid")!.GetValue(node)!;
-                em     += (decimal)t.GetProperty("earmarks")!.GetValue(node)!;
+                allot  += Get<decimal>(node, "allotment");
+                obl    += Get<decimal>(node, "obligations");
+                disb   += Get<decimal>(node, "disbursements");
+                unpaid += Get<decimal>(node, "unpaid");
+                em     += Get<decimal>(node, "earmarks");
             }
             return (allot, obl, disb, unpaid, em);
         }
@@ -290,12 +330,11 @@ namespace BFAR.EBudget.Controllers
             decimal allot = 0, obl = 0, disb = 0, unpaid = 0, em = 0;
             foreach (var node in nodes)
             {
-                var t = node.GetType();
-                allot  += (decimal)t.GetProperty("allotment")!.GetValue(node)!;
-                obl    += (decimal)t.GetProperty("obligations")!.GetValue(node)!;
-                disb   += (decimal)t.GetProperty("disbursements")!.GetValue(node)!;
-                unpaid += (decimal)t.GetProperty("unpaid")!.GetValue(node)!;
-                em     += (decimal)t.GetProperty("earmarks")!.GetValue(node)!;
+                allot  += Get<decimal>(node, "allotment");
+                obl    += Get<decimal>(node, "obligations");
+                disb   += Get<decimal>(node, "disbursements");
+                unpaid += Get<decimal>(node, "unpaid");
+                em     += Get<decimal>(node, "earmarks");
             }
             return (allot, obl, disb, unpaid, allot - obl, em);
         }
