@@ -99,9 +99,9 @@ namespace BFAR.EBudget.Data
                 new[] { new MySqlParameter("@id", rcId) });
 
         // ── Get full obligation detail for ORS print ─────────────────────────
-        public ObligationDetail? GetObligationDetail(int id)
-        {
-            const string sql = @"
+        // Shared SELECT used by both single-record lookup (by id) and
+        // grouped lookup (by ors_no, for consolidated/multi-line ORS printing).
+        private const string ObligationDetailSql = @"
                 SELECT  o.id, o.ors_no, DATE_FORMAT(o.ors_date,'%m/%d/%Y') AS ors_date,
                         o.payee, o.particulars, o.amount, o.status,
                         rc.code  AS rc_code,  rc.name  AS rc_name,
@@ -125,17 +125,10 @@ namespace BFAR.EBudget.Data
                 LEFT JOIN activity_level         al  ON al.id  = o.activity_level_id
                 LEFT JOIN project_sub_category   psc ON psc.id = al.project_sub_category_id
                 LEFT JOIN project_category       pc  ON pc.id  = NULLIF(psc.project_category_id, 0)
-                LEFT JOIN program                p   ON p.id   = COALESCE(pc.program_id, psc.program_id)
-                WHERE   o.id = @id
-                LIMIT   1";
+                LEFT JOIN program                p   ON p.id   = COALESCE(pc.program_id, psc.program_id)";
 
-            using var conn = new MySqlConnection(_connStr);
-            using var cmd  = new MySqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("@id", id);
-            conn.Open();
-            using var rdr = cmd.ExecuteReader();
-            if (!rdr.Read()) return null;
-
+        private static ObligationDetail MapObligationDetail(MySqlDataReader rdr)
+        {
             return new ObligationDetail
             {
                 Id                 = rdr.GetInt32(rdr.GetOrdinal("id")),
@@ -173,6 +166,43 @@ namespace BFAR.EBudget.Data
                 SubAccountCode     = rdr.IsDBNull(rdr.GetOrdinal("sub_account_code")) ? "" : rdr.GetValue(rdr.GetOrdinal("sub_account_code")).ToString()!,
                 SubAccountDesc     = rdr.IsDBNull(rdr.GetOrdinal("sub_account_desc")) ? "" : rdr.GetValue(rdr.GetOrdinal("sub_account_desc")).ToString()!,
             };
+        }
+
+        public ObligationDetail? GetObligationDetail(int id)
+        {
+            string sql = ObligationDetailSql + " WHERE o.id = @id LIMIT 1";
+
+            using var conn = new MySqlConnection(_connStr);
+            using var cmd  = new MySqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@id", id);
+            conn.Open();
+            using var rdr = cmd.ExecuteReader();
+            if (!rdr.Read()) return null;
+
+            return MapObligationDetail(rdr);
+        }
+
+        // Returns every obligation row sharing the given ORS/BURS number,
+        // ordered earliest-first (by id — the auto-increment column
+        // reflects creation order). Used for consolidated ORS printing:
+        // one ORS number can span several Responsibility Centers, and/or
+        // one RC can carry several account codes, each stored as its own
+        // row in `obligations`.
+        public List<ObligationDetail> GetObligationsByOrsNo(string orsNo)
+        {
+            string sql = ObligationDetailSql + " WHERE o.ors_no = @orsNo ORDER BY o.id ASC";
+
+            var results = new List<ObligationDetail>();
+            using var conn = new MySqlConnection(_connStr);
+            using var cmd  = new MySqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@orsNo", orsNo);
+            conn.Open();
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+            {
+                results.Add(MapObligationDetail(rdr));
+            }
+            return results;
         }
 
         // ── Save obligation ───────────────────────────────────────────────────

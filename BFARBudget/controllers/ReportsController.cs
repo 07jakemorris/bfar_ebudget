@@ -164,65 +164,88 @@ namespace BFAR.EBudget.Controllers
         // ── Helper: RC → Expense Class → Account Code nodes for one fund ──────
         private List<object> GetExpenseClassNodes(int fundId, string? rcId, string? classId, string? fiscalYear)
         {
-            string rcFilter    = (!string.IsNullOrWhiteSpace(rcId) && rcId != "all") ? $"AND a.rc_id = {int.Parse(rcId)}" : "";
-            string classFilter = (!string.IsNullOrWhiteSpace(classId) && classId != "all") ? $"AND a.expense_class_id = {int.Parse(classId)}" : "";
-            string fyFilter    = (!string.IsNullOrWhiteSpace(fiscalYear) && fiscalYear != "all") ? $"AND a.fiscal_year = '{fiscalYear.Replace("'", "")}'" : "";
+            string rcFilter    = (!string.IsNullOrWhiteSpace(rcId)       && rcId       != "all") ? $"AND a.rc_id = {int.Parse(rcId)}"                         : "";
+            string classFilter = (!string.IsNullOrWhiteSpace(classId)    && classId    != "all") ? $"AND a.expense_class_id = {int.Parse(classId)}"           : "";
+            string fyFilter    = (!string.IsNullOrWhiteSpace(fiscalYear) && fiscalYear != "all") ? $"AND a.fiscal_year = '{fiscalYear.Replace("'", "")}'"      : "";
 
-            // Pull allotment rows grouped by RC → Expense Class → Account Code
             string sql = $@"
-                SELECT rc.id AS rc_id, rc.name AS rc_name,
-                       ec.id, ec.code, ec.name,
-                       ac.id AS acct_id, ac.code AS acct_code, ac.description AS acct_desc,
-                       COALESCE(a.amount, 0) AS allotment
-                FROM   allotments a
+                SELECT  rc.id   AS rc_id,
+                        rc.name AS rc_name,
+                        ec.id   AS ec_id,
+                        ec.code AS ec_code,
+                        ec.name AS ec_name,
+                        ac.id   AS ac_id,
+                        ac.code AS ac_code,
+                        ac.description AS ac_desc,
+                        COALESCE(a.amount, 0) AS allotment
+                FROM    allotments a
                 INNER JOIN responsibility_center rc ON rc.id = a.rc_id
                 INNER JOIN expense_class         ec ON ec.id = a.expense_class_id
                 LEFT  JOIN account_code          ac ON ac.id = a.account_code_id
-                WHERE  a.fund_id = {fundId} {rcFilter} {classFilter} {fyFilter}
+                WHERE   a.fund_id = {fundId} {rcFilter} {classFilter} {fyFilter}
                 ORDER BY rc.name, ec.name, ac.code";
 
-            var rows = new List<(int rcId, string rcName, int ecId, string ecCode, string ecName,
-                                  int? acctId, string acctCode, string acctDesc, decimal allotment)>();
+            var rows = new List<(int rcId, string rcName,
+                                 int ecId, string ecCode, string ecName,
+                                 int? acId, string acCode, string acDesc,
+                                 decimal allotment)>();
 
             using (var conn = Conn())
             {
                 conn.Open();
                 using var cmd = new MySqlCommand(sql, conn);
                 using var rdr = cmd.ExecuteReader();
+                int iRcId   = rdr.GetOrdinal("rc_id");
+                int iRcName = rdr.GetOrdinal("rc_name");
+                int iEcId   = rdr.GetOrdinal("ec_id");
+                int iEcCode = rdr.GetOrdinal("ec_code");
+                int iEcName = rdr.GetOrdinal("ec_name");
+                int iAcId   = rdr.GetOrdinal("ac_id");
+                int iAcCode = rdr.GetOrdinal("ac_code");
+                int iAcDesc = rdr.GetOrdinal("ac_desc");
+                int iAllot  = rdr.GetOrdinal("allotment");
+
                 while (rdr.Read())
                     rows.Add((
-                        rdr.GetInt32(0),
-                        rdr.GetValue(1).ToString() ?? "",
-                        rdr.GetInt32(2),
-                        rdr.GetValue(3).ToString() ?? "",
-                        rdr.GetValue(4).ToString() ?? "",
-                        rdr.IsDBNull(5) ? (int?)null : rdr.GetInt32(5),
-                        rdr.IsDBNull(6) ? "" : rdr.GetValue(6).ToString() ?? "",
-                        rdr.IsDBNull(7) ? "" : rdr.GetValue(7).ToString() ?? "",
-                        rdr.GetDecimal(8)
+                        rdr.GetInt32(iRcId),
+                        rdr.GetValue(iRcName).ToString() ?? "",
+                        rdr.GetInt32(iEcId),
+                        rdr.GetValue(iEcCode).ToString() ?? "",
+                        rdr.GetValue(iEcName).ToString() ?? "",
+                        rdr.IsDBNull(iAcId)   ? (int?)null : rdr.GetInt32(iAcId),
+                        rdr.IsDBNull(iAcCode) ? ""         : rdr.GetValue(iAcCode).ToString()!,
+                        rdr.IsDBNull(iAcDesc) ? ""         : rdr.GetValue(iAcDesc).ToString()!,
+                        rdr.GetDecimal(iAllot)
                     ));
             }
 
-            // Group: RC → Expense Class → Account Code
+            // ── Group: RC → Expense Class → Account Code ──────────────────────
             var rcNodes = new List<object>();
-            var byRC = rows.GroupBy(r => new { r.rcId, r.rcName });
 
-            foreach (var rcGroup in byRC)
+            foreach (var rcGroup in rows.GroupBy(r => new { r.rcId, r.rcName }))
             {
                 var classNodes = new List<object>();
-                var byClass    = rcGroup.GroupBy(r => new { r.ecId, r.ecCode, r.ecName });
 
-                foreach (var cls in byClass)
+                foreach (var cls in rcGroup.GroupBy(r => new { r.ecId, r.ecCode, r.ecName }))
                 {
                     var acctNodes = new List<object>();
+
                     foreach (var r in cls)
                     {
-                        if (r.acctId == null) continue;
-                        var fig = GetObligationFigures(r.acctId.Value, rcGroup.Key.rcId.ToString(), fiscalYear);
+                        if (r.acId == null) continue;
+
+                        // Scope obligation figures to THIS rc + account code
+                        var fig = GetObligationFigures(r.acId.Value, rcGroup.Key.rcId, fiscalYear);
+
+                        // Build label: "5020101000 - Traveling Expenses" or just description if no code
+                        string acLabel = !string.IsNullOrWhiteSpace(r.acCode) && !string.IsNullOrWhiteSpace(r.acDesc)
+                                         ? $"{r.acCode} - {r.acDesc}"
+                                         : !string.IsNullOrWhiteSpace(r.acCode) ? r.acCode : r.acDesc;
+
                         acctNodes.Add(new
                         {
-                            label         = $"{r.acctCode} - {r.acctDesc}",
-                            accountCodeId = r.acctId,
+                            label         = acLabel,
+                            accountCodeId = r.acId,
                             allotment     = r.allotment,
                             obligations   = fig.obligations,
                             disbursements = fig.disbursements,
@@ -232,15 +255,23 @@ namespace BFAR.EBudget.Controllers
                         });
                     }
 
+                    // Skip if no account code rows under this expense class
+                    if (acctNodes.Count == 0) continue;
+
                     decimal clsAllot  = acctNodes.Sum(n => Get<decimal>(n, "allotment"));
                     decimal clsObl    = acctNodes.Sum(n => Get<decimal>(n, "obligations"));
                     decimal clsDisb   = acctNodes.Sum(n => Get<decimal>(n, "disbursements"));
                     decimal clsUnpaid = acctNodes.Sum(n => Get<decimal>(n, "unpaid"));
                     decimal clsEm     = acctNodes.Sum(n => Get<decimal>(n, "earmarks"));
 
+                    // Build expense class label
+                    string ecLabel = !string.IsNullOrWhiteSpace(cls.Key.ecCode)
+                                     ? $"{cls.Key.ecCode} - {cls.Key.ecName}"
+                                     : cls.Key.ecName;
+
                     classNodes.Add(new
                     {
-                        label          = $"{cls.Key.ecCode} - {cls.Key.ecName}",
+                        label          = ecLabel,
                         expenseClassId = cls.Key.ecId,
                         allotment      = clsAllot,
                         obligations    = clsObl,
@@ -251,6 +282,9 @@ namespace BFAR.EBudget.Controllers
                         accountCodes   = acctNodes
                     });
                 }
+
+                // Skip RC if it has no expense class rows
+                if (classNodes.Count == 0) continue;
 
                 decimal rcAllot  = classNodes.Sum(n => Get<decimal>(n, "allotment"));
                 decimal rcObl    = classNodes.Sum(n => Get<decimal>(n, "obligations"));
@@ -279,30 +313,41 @@ namespace BFAR.EBudget.Controllers
         private static T Get<T>(object obj, string prop) =>
             (T)obj.GetType().GetProperty(prop)!.GetValue(obj)!;
 
-        // ── Helper: obligation/disbursement/earmark figures per account code ──
+        // ── Get obligation/earmark figures for ONE account code under ONE RC ──
         private (decimal obligations, decimal disbursements, decimal unpaid, decimal earmarks)
-            GetObligationFigures(int accountCodeId, string? rcId, string? fiscalYear)
+            GetObligationFigures(int accountCodeId, int rcId, string? fiscalYear)
         {
-            string rcFilterO  = (!string.IsNullOrWhiteSpace(rcId) && rcId != "all") ? $"AND o.rc_id = {int.Parse(rcId)}" : "";
-            string fyFilterO  = (!string.IsNullOrWhiteSpace(fiscalYear) && fiscalYear != "all") ? $"AND YEAR(o.ors_date) = {int.Parse(fiscalYear)}" : "";
-            string rcFilterE  = (!string.IsNullOrWhiteSpace(rcId) && rcId != "all") ? $"AND e.rc_id = {int.Parse(rcId)}" : "";
-            string fyFilterE  = (!string.IsNullOrWhiteSpace(fiscalYear) && fiscalYear != "all") ? $"AND YEAR(e.earmarked_date) = {int.Parse(fiscalYear)}" : "";
+            string fyO = (!string.IsNullOrWhiteSpace(fiscalYear) && fiscalYear != "all")
+                         ? $"AND YEAR(o.ors_date) = {int.Parse(fiscalYear)}" : "";
+            string fyE = (!string.IsNullOrWhiteSpace(fiscalYear) && fiscalYear != "all")
+                         ? $"AND YEAR(e.earmarked_date) = {int.Parse(fiscalYear)}" : "";
 
             decimal obl = RunScalar($@"
-                SELECT COALESCE(SUM(amount),0) FROM obligations o
-                WHERE o.account_code_id = {accountCodeId} {rcFilterO} {fyFilterO}");
+                SELECT COALESCE(SUM(amount),0)
+                FROM   obligations o
+                WHERE  o.account_code_id = {accountCodeId}
+                AND    o.rc_id           = {rcId} {fyO}");
 
             decimal disb = RunScalar($@"
-                SELECT COALESCE(SUM(amount),0) FROM obligations o
-                WHERE o.account_code_id = {accountCodeId} AND o.status = 'Posted' {rcFilterO} {fyFilterO}");
+                SELECT COALESCE(SUM(amount),0)
+                FROM   obligations o
+                WHERE  o.account_code_id = {accountCodeId}
+                AND    o.rc_id           = {rcId}
+                AND    o.status          = 'Posted' {fyO}");
 
             decimal unpaid = RunScalar($@"
-                SELECT COALESCE(SUM(amount),0) FROM obligations o
-                WHERE o.account_code_id = {accountCodeId} AND o.status = 'Pending' {rcFilterO} {fyFilterO}");
+                SELECT COALESCE(SUM(amount),0)
+                FROM   obligations o
+                WHERE  o.account_code_id = {accountCodeId}
+                AND    o.rc_id           = {rcId}
+                AND    o.status          = 'Pending' {fyO}");
 
             decimal em = RunScalar($@"
-                SELECT COALESCE(SUM(amount),0) FROM earmarks e
-                WHERE e.account_code_id = {accountCodeId} AND e.status = 'Pending' {rcFilterE} {fyFilterE}");
+                SELECT COALESCE(SUM(amount),0)
+                FROM   earmarks e
+                WHERE  e.account_code_id = {accountCodeId}
+                AND    e.rc_id           = {rcId}
+                AND    e.status          = 'Pending' {fyE}");
 
             return (obl, disb, unpaid, em);
         }

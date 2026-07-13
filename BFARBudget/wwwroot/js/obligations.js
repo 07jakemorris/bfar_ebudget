@@ -153,6 +153,102 @@ function loadStatic(selectId, url, placeholder) {
 }
 
 /* ════════════════════════════════════════════
+   SMART PROGRAM CASCADE
+   Handles programs that skip Project Category
+   and link directly to Sub-Category.
+   ════════════════════════════════════════════ */
+function onProgramChange() {
+  const programId = document.getElementById('ors-program')?.value;
+
+  // Reset all downstream
+  disableDropdown('ors-projcat',    '— Select Program first —');
+  disableDropdown('ors-projsubcat', '— Select Category first —');
+  disableDropdown('ors-activity',   '— Select Sub-Category first —');
+
+  if (!programId) return;
+
+  // Try loading project categories for this program
+  fetch(`/api/dropdown/project-categories?parentId=${encodeURIComponent(programId)}`)
+    .then(r => r.json())
+    .then(items => {
+      if (items.length > 0) {
+        // Program HAS categories → show them normally
+        const sel = document.getElementById('ors-projcat');
+        sel.innerHTML = '<option value="">— Select Category —</option>';
+        items.forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item.value; opt.textContent = item.text;
+          sel.appendChild(opt);
+        });
+        sel.disabled = false;
+        // Sub-category and activity stay disabled until category is picked
+      } else {
+        // Program has NO categories → skip directly to sub-categories
+        // Keep projcat disabled with a label explaining
+        disableDropdown('ors-projcat', '— No categories for this program —');
+
+        // Load sub-categories directly by program ID
+        loadSubCatByProgram(programId);
+      }
+    })
+    .catch(() => {
+      disableDropdown('ors-projcat', '— Error loading categories —');
+    });
+}
+
+function onProjCatChange() {
+  const catId     = document.getElementById('ors-projcat')?.value;
+  const programId = document.getElementById('ors-program')?.value;
+
+  disableDropdown('ors-projsubcat', '— Select Category first —');
+  disableDropdown('ors-activity',   '— Select Sub-Category first —');
+
+  if (!catId) return;
+
+  // Load sub-categories by category (normal flow)
+  fetch(`/api/dropdown/project-sub-categories?parentId=${encodeURIComponent(catId)}`)
+    .then(r => r.json())
+    .then(items => {
+      if (items.length > 0) {
+        fillDropdown('ors-projsubcat', items, '— Select Sub-Category —');
+      } else if (programId) {
+        // Fallback: try by program if category has no sub-cats
+        loadSubCatByProgram(programId);
+      } else {
+        disableDropdown('ors-projsubcat', '— No sub-categories found —');
+      }
+    })
+    .catch(() => disableDropdown('ors-projsubcat', '— Error loading —'));
+}
+
+function loadSubCatByProgram(programId) {
+  // The DropdownController tries by category first, falls back to program
+  // We pass programId as parentId — the backend will find direct-to-program sub-cats
+  fetch(`/api/dropdown/project-sub-categories?parentId=${encodeURIComponent(programId)}`)
+    .then(r => r.json())
+    .then(items => {
+      if (items.length > 0) {
+        fillDropdown('ors-projsubcat', items, '— Select Sub-Category —');
+      } else {
+        disableDropdown('ors-projsubcat', '— No sub-categories found —');
+      }
+    })
+    .catch(() => disableDropdown('ors-projsubcat', '— Error loading —'));
+}
+
+function fillDropdown(id, items, placeholder) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  sel.innerHTML = `<option value="">${placeholder}</option>`;
+  items.forEach(item => {
+    const opt = document.createElement('option');
+    opt.value = item.value; opt.textContent = item.text;
+    sel.appendChild(opt);
+  });
+  sel.disabled = items.length === 0;
+}
+
+/* ════════════════════════════════════════════
    CASCADE DROPDOWN
    ════════════════════════════════════════════ */
 function cascadeLoad(parentSelectId, apiUrl, childSelectId, placeholder) {

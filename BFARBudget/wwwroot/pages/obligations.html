@@ -119,9 +119,9 @@
             <div class="field-group">
               <label>Particulars <span class="req-mark">*</span></label>
               <textarea id="ors-particulars" rows="4"
-                placeholder="Describe the nature of this obligation in detail..."
+                placeholder="Describe the nature of this obligation in detail (minimum 500 characters)..."
                 oninput="updateCharCount()"></textarea>
-              <div class="char-counter" id="char-counter">0 characters</div>
+              <div class="char-counter" id="char-counter">0 / 500 minimum</div>
             </div>
 
           </div>
@@ -139,7 +139,7 @@
               <div class="field-group">
                 <label>Program / Project <span class="req-mark">*</span></label>
                 <select id="ors-program"
-                  onchange="cascadeLoad('ors-program', '/api/dropdown/project-categories', 'ors-projcat', '— Select Category —')">
+                  onchange="onProgramChange()">
                   <option value="">— Select Program —</option>
                 </select>
               </div>
@@ -147,7 +147,7 @@
               <div class="field-group">
                 <label>Project Category <span class="req-mark">*</span></label>
                 <select id="ors-projcat" disabled
-                  onchange="cascadeLoad('ors-projcat', '/api/dropdown/project-sub-categories', 'ors-projsubcat', '— Select Sub-Category —')">
+                  onchange="onProjCatChange()">
                   <option value="">— Select Program first —</option>
                 </select>
               </div>

@@ -52,6 +52,27 @@ namespace BFAR.EBudget.Controllers
             }
         }
 
+        // GET /api/obligations/by-ors-no/26-07-1460
+        // Returns every obligation row sharing this ORS/BURS number, ordered
+        // earliest-first. Used by the print page for consolidated obligations
+        // (multiple Responsibility Centers, and/or multiple account codes,
+        // filed under one ORS number).
+        [HttpGet("by-ors-no/{orsNo}")]
+        public IActionResult GetByOrsNo(string orsNo)
+        {
+            try
+            {
+                var records = _db.GetObligationsByOrsNo(orsNo);
+                if (records == null || records.Count == 0)
+                    return NotFound(new { error = $"No obligations found for ORS No. '{orsNo}'." });
+                return Ok(records);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
         // GET /api/obligations
         [HttpGet]
         public IActionResult GetAll()

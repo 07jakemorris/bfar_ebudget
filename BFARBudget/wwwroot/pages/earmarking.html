@@ -65,8 +65,31 @@
                 <input type="date" id="em-date" />
               </div>
 
+              <div class="field-group">
+                <label>Payee / Supplier <span class="req-mark">*</span></label>
+                <input type="text" id="em-payee" placeholder="Full name of payee or supplier" />
+              </div>
 
+              <div class="field-group">
+                <label>Creditor Type <span class="req-mark">*</span></label>
+                <div class="radio-toggle">
+                  <input type="radio" name="em-creditor" id="em-cr-internal" value="Internal" checked />
+                  <label for="em-cr-internal">Internal</label>
+                  <input type="radio" name="em-creditor" id="em-cr-external" value="External" />
+                  <label for="em-cr-external">External</label>
+                </div>
+              </div>
 
+              <div class="field-group">
+                <label>Quarter <span class="req-mark">*</span></label>
+                <select id="em-quarter">
+                  <option value="">— Select Quarter —</option>
+                  <option value="Q1">Q1 (Jan – Mar)</option>
+                  <option value="Q2">Q2 (Apr – Jun)</option>
+                  <option value="Q3">Q3 (Jul – Sep)</option>
+                  <option value="Q4">Q4 (Oct – Dec)</option>
+                </select>
+              </div>
 
               <div class="field-group">
                 <label>Responsibility Center <span class="req-mark">*</span></label>
@@ -113,7 +136,7 @@
               <div class="field-group">
                 <label>Program / Project <span class="req-mark">*</span></label>
                 <select id="em-program"
-                  onchange="emCascade('em-program', '/api/dropdown/project-categories', 'em-projcat', '— Select Category —')">
+                  onchange="onEmProgramChange()">
                   <option value="">— Select Program —</option>
                 </select>
               </div>
@@ -121,7 +144,7 @@
               <div class="field-group">
                 <label>Project Category <span class="req-mark">*</span></label>
                 <select id="em-projcat" disabled
-                  onchange="emCascade('em-projcat', '/api/dropdown/project-sub-categories', 'em-projsubcat', '— Select Sub-Category —')">
+                  onchange="onEmProjCatChange()">
                   <option value="">— Select Program first —</option>
                 </select>
               </div>

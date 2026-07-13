@@ -1,3 +1,12 @@
+/* =========================================
+   earmarking.js — BFAR E-Budget
+   Mirrors obligations.js architecture.
+   PR number is manually entered (YY-MM-XXXX format).
+   ========================================= */
+
+/* ════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function () {
   const dateEl = document.getElementById('em-date');
   if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
@@ -74,6 +83,88 @@ function emLoadStatic(selectId, url, placeholder) {
 /* ════════════════════════════════════════════
    CASCADE DROPDOWN
    ════════════════════════════════════════════ */
+/* ════════════════════════════════════════════
+   SMART PROGRAM CASCADE (Earmarking)
+   Handles programs that skip Project Category
+   and link directly to Sub-Category.
+   ════════════════════════════════════════════ */
+function onEmProgramChange() {
+  const programId = document.getElementById('em-program')?.value;
+
+  // Reset all downstream
+  emDisable('em-projcat',    '— Select Program first —');
+  emDisable('em-projsubcat', '— Select Category first —');
+  emDisable('em-activity',   '— Select Sub-Category first —');
+
+  if (!programId) return;
+
+  // Try loading project categories for this program
+  fetch(`/api/dropdown/project-categories?parentId=${encodeURIComponent(programId)}`)
+    .then(r => r.json())
+    .then(items => {
+      if (items.length > 0) {
+        // Program HAS categories → show them normally
+        emFillDropdown('em-projcat', items, '— Select Category —');
+        // Sub-category and activity stay disabled until category is picked
+      } else {
+        // Program has NO categories → skip directly to sub-categories
+        emDisable('em-projcat', '— No categories for this program —');
+        emLoadSubCatByProgram(programId);
+      }
+    })
+    .catch(() => emDisable('em-projcat', '— Error loading categories —'));
+}
+
+function onEmProjCatChange() {
+  const catId     = document.getElementById('em-projcat')?.value;
+  const programId = document.getElementById('em-program')?.value;
+
+  emDisable('em-projsubcat', '— Select Category first —');
+  emDisable('em-activity',   '— Select Sub-Category first —');
+
+  if (!catId) return;
+
+  // Load sub-categories by category (normal flow)
+  fetch(`/api/dropdown/project-sub-categories?parentId=${encodeURIComponent(catId)}`)
+    .then(r => r.json())
+    .then(items => {
+      if (items.length > 0) {
+        emFillDropdown('em-projsubcat', items, '— Select Sub-Category —');
+      } else if (programId) {
+        // Fallback: try by program
+        emLoadSubCatByProgram(programId);
+      } else {
+        emDisable('em-projsubcat', '— No sub-categories found —');
+      }
+    })
+    .catch(() => emDisable('em-projsubcat', '— Error loading —'));
+}
+
+function emLoadSubCatByProgram(programId) {
+  fetch(`/api/dropdown/project-sub-categories?parentId=${encodeURIComponent(programId)}`)
+    .then(r => r.json())
+    .then(items => {
+      if (items.length > 0) {
+        emFillDropdown('em-projsubcat', items, '— Select Sub-Category —');
+      } else {
+        emDisable('em-projsubcat', '— No sub-categories found —');
+      }
+    })
+    .catch(() => emDisable('em-projsubcat', '— Error loading —'));
+}
+
+function emFillDropdown(id, items, placeholder) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  sel.innerHTML = `<option value="">${placeholder}</option>`;
+  items.forEach(item => {
+    const opt = document.createElement('option');
+    opt.value = item.value; opt.textContent = item.text;
+    sel.appendChild(opt);
+  });
+  sel.disabled = items.length === 0;
+}
+
 function emCascade(parentId, apiUrl, childId, placeholder) {
   const parent = document.getElementById(parentId);
   const child  = document.getElementById(childId);
@@ -159,10 +250,14 @@ function emCharCount() {
    ════════════════════════════════════════════ */
 function saveEarmark() {
   const get = id => document.getElementById(id);
+  const creditorEl = document.querySelector('input[name="em-creditor"]:checked');
 
   const model = {
     prNo:             get('em-no')?.value.trim(),
     earmarkedDate:    get('em-date')?.value,
+    payee:            get('em-payee')?.value.trim(),
+    creditorType:     creditorEl?.value || 'Internal',
+    quarter:          get('em-quarter')?.value,
     rcId:             parseInt(get('em-rc')?.value)          || 0,
     signatoryId:      parseInt(get('em-signatory')?.value)   || 0,
     purpose:          get('em-purpose')?.value.trim(),
@@ -176,6 +271,8 @@ function saveEarmark() {
 
   // Validation
   if (!model.prNo)             return emShowToast('PR No. is required.', 'error');
+  if (!model.payee)            return emShowToast('Payee is required.', 'error');
+  if (!model.quarter)          return emShowToast('Quarter is required.', 'error');
   if (!model.rcId)             return emShowToast('Responsibility Center is required.', 'error');
   if (!model.signatoryId)      return emShowToast('Signatory is required.', 'error');
   if (!model.purpose)          return emShowToast('Purpose / Description is required.', 'error');
@@ -316,10 +413,10 @@ function cancelEarmark(id, btn) {
    CLEAR FORM
    ════════════════════════════════════════════ */
 function clearEarmark() {
-  ['em-no','em-purpose','em-remarks','em-amount'].forEach(id => {
+  ['em-no','em-payee','em-purpose','em-remarks','em-amount'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  ['em-rc','em-program','em-expclass'].forEach(id => {
+  ['em-quarter','em-rc','em-program','em-expclass'].forEach(id => {
     const el = document.getElementById(id); if (el) el.selectedIndex = 0;
   });
 
@@ -338,6 +435,9 @@ function clearEarmark() {
 
   const dateEl = document.getElementById('em-date');
   if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+
+  const internal = document.getElementById('em-cr-internal');
+  if (internal) internal.checked = true;
 
   const hint = document.getElementById('em-char-counter');
   if (hint) { hint.textContent = '0 characters'; hint.className = 'char-counter'; }
