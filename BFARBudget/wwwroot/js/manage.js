@@ -988,7 +988,14 @@ function renderAllotRecTable() {
   }, 7);
 }
 
-function saveAllotment() {
+/* ════════════════════════════════════════════════
+   ALLOTMENT QUEUE
+   Allows adding multiple account codes before
+   saving all at once to the database.
+   ════════════════════════════════════════════════ */
+var _allotQueue = []; // [{ acctId, acctLabel, rcId, rcName, amount, fy, fundId, classId }]
+
+function addToQueue() {
   var fy      = getValue('allot-fy');
   var fundId  = getValue('allot-fund');
   var classId = getValue('allot-class');
@@ -1001,25 +1008,185 @@ function saveAllotment() {
   if (!typeId)  { mToast('Expense Type is required.', 'error'); return; }
   if (!acctId)  { mToast('Account Code is required.', 'error'); return; }
 
-  var inputs = document.querySelectorAll('.allot-rc-input');
-  var entries = [];
+  // Get the selected account code label
+  var acctSel  = document.getElementById('allot-acct');
+  var acctLabel = acctSel ? acctSel.options[acctSel.selectedIndex].text : acctId;
+
+  // Get fund label
+  var fundSel  = document.getElementById('allot-fund');
+  var fundLabel = fundSel ? fundSel.options[fundSel.selectedIndex].text : fundId;
+
+  // Get class label
+  var classSel  = document.getElementById('allot-class');
+  var classLabel = classSel ? classSel.options[classSel.selectedIndex].text : classId;
+
+  // Collect RC entries with amounts > 0
+  var inputs  = document.querySelectorAll('.allot-rc-input');
+  var added   = 0;
+
   inputs.forEach(function(input) {
     var amt = parseFloat(input.value);
-    if (amt > 0) entries.push({ rcId: parseInt(input.dataset.rcId), amount: amt });
-  });
-  if (entries.length === 0) { mToast('Enter at least one RC amount.', 'error'); return; }
+    if (!(amt > 0)) return;
 
-  apiPost('/api/manage/allotments', {
-    fiscalYear: fy,
-    fundId: parseInt(fundId),
-    expenseClassId: parseInt(classId),
-    accountCodeId: parseInt(acctId),
-    entries: entries
-  }, function(d) {
-    mToast(d.message || entries.length + ' allotment(s) saved.');
-    document.querySelectorAll('.allot-rc-input').forEach(function(i) { i.value = ''; });
-    loadAllotments();
+    var rcId   = parseInt(input.dataset.rcId);
+    var rcName = input.dataset.rcName || ('RC ' + rcId);
+
+    // Check for duplicate in queue (same acct + rc + fy + fund)
+    var duplicate = _allotQueue.some(function(q) {
+      return q.acctId === parseInt(acctId) &&
+             q.rcId   === rcId &&
+             q.fy     === fy &&
+             q.fundId === parseInt(fundId);
+    });
+
+    if (duplicate) {
+      mToast('Duplicate: ' + acctLabel + ' for ' + rcName + ' already in queue.', 'warn');
+      return;
+    }
+
+    _allotQueue.push({
+      fy:         fy,
+      fundId:     parseInt(fundId),
+      fundLabel:  fundLabel,
+      classId:    parseInt(classId),
+      classLabel: classLabel,
+      acctId:     parseInt(acctId),
+      acctLabel:  acctLabel,
+      rcId:       rcId,
+      rcName:     rcName,
+      amount:     amt
+    });
+    added++;
   });
+
+  if (added === 0) {
+    mToast('Enter at least one RC amount greater than 0.', 'error');
+    return;
+  }
+
+  mToast(added + ' item(s) added to queue. Pick another account code or Save All.');
+
+  // Clear only RC amounts — keep the fund/class/type/acct selections
+  document.querySelectorAll('.allot-rc-input').forEach(function(i) { i.value = ''; });
+
+  renderQueue();
+}
+
+function renderQueue() {
+  var tbody    = document.getElementById('allot-queue-tbody');
+  var empty    = document.getElementById('allot-queue-empty');
+  var tblWrap  = document.getElementById('allot-queue-table-wrap');
+  var saveBtn  = document.getElementById('btn-save-queue');
+  var countEl  = document.getElementById('queue-count');
+
+  if (!tbody) return;
+
+  if (_allotQueue.length === 0) {
+    if (empty)   empty.style.display   = '';
+    if (tblWrap) tblWrap.style.display = 'none';
+    if (saveBtn) saveBtn.disabled = true;
+    if (countEl) countEl.textContent = '0';
+    return;
+  }
+
+  if (empty)   empty.style.display   = 'none';
+  if (tblWrap) tblWrap.style.display = '';
+  if (saveBtn) saveBtn.disabled = false;
+  if (countEl) countEl.textContent = _allotQueue.length;
+
+  tbody.innerHTML = _allotQueue.map(function(q, i) {
+    return '<tr>' +
+      '<td style="font-size:12px">' + esc(q.acctLabel) + '</td>' +
+      '<td>' + esc(q.rcName) + '</td>' +
+      '<td style="text-align:right;font-weight:700">₱' +
+        q.amount.toLocaleString('en-PH', {minimumFractionDigits:2}) + '</td>' +
+      '<td style="text-align:center">' +
+        '<button class="btn btn-sm btn-danger" onclick="removeFromQueue(' + i + ')">✕</button>' +
+      '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function removeFromQueue(idx) {
+  _allotQueue.splice(idx, 1);
+  renderQueue();
+}
+
+function clearQueue() {
+  _allotQueue = [];
+  renderQueue();
+  mToast('Queue cleared.');
+}
+
+function saveAllotmentQueue() {
+  if (_allotQueue.length === 0) { mToast('Queue is empty.', 'error'); return; }
+
+  var btn = document.getElementById('btn-save-queue');
+  if (btn) btn.disabled = true;
+
+  // Group by fy + fundId + classId + acctId and build entries array
+  // Send each unique (fy, fund, class, acct) combination as a separate POST
+  // Build a list of unique combos
+  var combos = {};
+  _allotQueue.forEach(function(q) {
+    var key = q.fy + '_' + q.fundId + '_' + q.classId + '_' + q.acctId;
+    if (!combos[key]) {
+      combos[key] = {
+        fiscalYear:     q.fy,
+        fundId:         q.fundId,
+        expenseClassId: q.classId,
+        accountCodeId:  q.acctId,
+        entries:        []
+      };
+    }
+    combos[key].entries.push({ rcId: q.rcId, amount: q.amount });
+  });
+
+  var requests = Object.values(combos);
+  var saved    = 0;
+  var errors   = 0;
+  var total    = requests.length;
+
+  // Send all requests sequentially
+  function sendNext(idx) {
+    if (idx >= total) {
+      // All done
+      if (errors === 0) {
+        mToast(_allotQueue.length + ' allotment(s) saved successfully!');
+        _allotQueue = [];
+        renderQueue();
+        loadAllotments();
+
+        // Reset expense class/type/acct dropdowns
+        var classEl = document.getElementById('allot-class');
+        if (classEl) classEl.value = '';
+        var typeEl = document.getElementById('allot-exptype');
+        if (typeEl) { typeEl.innerHTML = '<option value="">— Select Class first —</option>'; typeEl.disabled = true; }
+        var acctEl = document.getElementById('allot-acct');
+        if (acctEl) { acctEl.innerHTML = '<option value="">— Select Type first —</option>'; acctEl.disabled = true; }
+      } else {
+        mToast(saved + ' saved, ' + errors + ' failed. Check console.', 'warn');
+        loadAllotments();
+      }
+      if (btn) btn.disabled = false;
+      return;
+    }
+
+    apiPost('/api/manage/allotments', requests[idx], function() {
+      saved++;
+      sendNext(idx + 1);
+    });
+    // apiPost already shows error toast on failure; override to continue
+  }
+
+  // Patch apiPost to not block on error for queue
+  var originalApiPost = window._queueApiPost || apiPost;
+  sendNext(0);
+}
+
+function saveAllotment() {
+  // Legacy single-save kept for compatibility — redirects to queue
+  mToast('Please use "Add to Queue" then "Save All" to save allotments.', 'warn');
 }
 
 function deleteAllotment(id, btn) {

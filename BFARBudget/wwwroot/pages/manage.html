@@ -617,20 +617,28 @@
       <div class="tab-panel" id="tab-allotment">
         <div class="card section-card">
           <div class="card-header">
-            <h2>Allotment per Responsibility Center</h2>
+            <h2>Add Allotment</h2>
             <span class="badge badge-teal">FY <span id="allot-fy-badge">2026</span></span>
           </div>
           <div class="card-body">
-            <div class="inline-form" style="margin-bottom:1.25rem;">
+
+            <!-- Step 1: Header fields -->
+            <div class="sub-label" style="margin-top:0">Step 1 — Set Fiscal Year &amp; Fund</div>
+            <div class="inline-form" style="margin-bottom:1rem;">
               <div class="field-group">
                 <label>Fiscal Year <span style="color:var(--danger)">*</span></label>
                 <input type="text" id="allot-fy" placeholder="e.g. 2026" maxlength="4"
                   oninput="document.getElementById('allot-fy-badge').textContent=this.value||'—'" />
               </div>
-              <div class="field-group">
+              <div class="field-group" style="flex:2">
                 <label>Fund Category <span style="color:var(--danger)">*</span></label>
                 <select id="allot-fund"><option value="">— Select Fund —</option></select>
               </div>
+            </div>
+
+            <!-- Step 2: Add account code + RC amounts to queue -->
+            <div class="sub-label">Step 2 — Pick Account Code &amp; Enter RC Amounts, then click Add to Queue</div>
+            <div class="inline-form" style="margin-bottom:0.75rem;">
               <div class="field-group">
                 <label>Expense Class <span style="color:var(--danger)">*</span></label>
                 <select id="allot-class" onchange="filterAllotExpenseTypes()">
@@ -643,7 +651,7 @@
                   <option value="">— Select Class first —</option>
                 </select>
               </div>
-              <div class="field-group">
+              <div class="field-group" style="flex:2">
                 <label>Account Code <span style="color:var(--danger)">*</span></label>
                 <select id="allot-acct" disabled>
                   <option value="">— Select Type first —</option>
@@ -651,14 +659,44 @@
               </div>
             </div>
 
-            <div class="sub-label">Enter allotment amount per RC</div>
+            <div class="sub-label">Enter amount per Responsibility Center</div>
             <div id="allot-rc-list">
-              <div style="color:var(--text-muted);font-size:13px;padding:1rem 0;">Loading Responsibility Centers…</div>
+              <div style="color:var(--text-muted);font-size:13px;padding:0.5rem 0;">Loading Responsibility Centers…</div>
             </div>
             <div id="allot-rc-pg"></div>
 
-            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:1.25rem;">
-              <button class="btn btn-primary save-allot-btn" onclick="saveAllotment()">💾 Save Allotment</button>
+            <div style="display:flex;justify-content:flex-end;margin-top:1rem;">
+              <button class="btn btn-accent" onclick="addToQueue()">
+                ＋ Add to Queue
+              </button>
+            </div>
+
+            <!-- Step 3: Queue preview -->
+            <div class="sub-label" style="margin-top:1.25rem;">Step 3 — Queue (review before saving)</div>
+            <div id="allot-queue-wrap" style="margin-bottom:1rem;">
+              <div id="allot-queue-empty" style="color:var(--text-muted);font-size:13px;padding:0.5rem 0;">
+                No items in queue yet. Pick an account code, enter RC amounts, then click "Add to Queue".
+              </div>
+              <div class="table-wrap" id="allot-queue-table-wrap" style="display:none;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="text-align:left">Account Code</th>
+                      <th style="text-align:left">Responsibility Center</th>
+                      <th style="text-align:right">Amount (₱)</th>
+                      <th style="text-align:center">Remove</th>
+                    </tr>
+                  </thead>
+                  <tbody id="allot-queue-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:0.5rem;">
+              <button class="btn" onclick="clearQueue()">✕ Clear Queue</button>
+              <button class="btn btn-primary" onclick="saveAllotmentQueue()" id="btn-save-queue" disabled>
+                💾 Save All (<span id="queue-count">0</span> items)
+              </button>
             </div>
           </div>
         </div>
