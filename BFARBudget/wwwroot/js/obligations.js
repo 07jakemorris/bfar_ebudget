@@ -404,7 +404,7 @@ function loadObligationsTable() {
               <td style="text-align:center"><span class="badge ${statusBadge(r.status)}">${esc(r.status)}</span></td>
               <td style="text-align:center;white-space:nowrap;display:flex;gap:5px;justify-content:center;">
                 <button class="btn btn-sm" style="background:#007b8a;color:#fff;border-color:#007b8a;"
-                  onclick="printORS('${esc(r.orsNo)}')"
+                  onclick="printORS(${r.id})"
                   title="Print ORS Form">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                   Print
@@ -431,14 +431,10 @@ function loadObligationsTable() {
    ════════════════════════════════════════════ */
 /* ════════════════════════════════════════════
    PRINT ORS FORM
-   Opens ors_print.html?ors=X in a new tab. X is the ORS/BURS number,
-   not a row id — a single ORS number can cover multiple obligation
-   rows (consolidated obligations across RCs, or one RC obligated
-   against several account codes), so the print page fetches and
-   groups everything sharing that number, not just one row.
+   Opens ors_print.html?id=X in a new tab.
    ════════════════════════════════════════════ */
-function printORS(orsNo) {
-  window.open('/pages/ors_print.html?ors=' + encodeURIComponent(orsNo), '_blank');
+function printORS(id) {
+  window.open('/pages/ors_print.html?id=' + id, '_blank');
 }
 
 function deleteObligation(id, btn) {
