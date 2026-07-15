@@ -141,7 +141,11 @@ function onEmProjCatChange() {
 }
 
 function emLoadSubCatByProgram(programId) {
-  fetch(`/api/dropdown/project-sub-categories?parentId=${encodeURIComponent(programId)}`)
+  // IMPORTANT: this must hit an endpoint that filters by program_id,
+  // NOT /api/dropdown/project-sub-categories (that one filters by
+  // project_category_id — passing a program id into it can coincidentally
+  // match an unrelated category and silently load the wrong sub-categories).
+  fetch(`/api/dropdown/project-sub-categories-by-program?parentId=${encodeURIComponent(programId)}`)
     .then(r => r.json())
     .then(items => {
       if (items.length > 0) {

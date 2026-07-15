@@ -190,7 +190,7 @@ function createPaperSkeleton(doc) {
 
     <table class="main-tbl">
       <colgroup>
-        <col><col><col><col>
+        <col class="col-resp"><col class="col-part"><col class="col-fund"><col class="col-amt">
       </colgroup>
       <thead>
         <tr>
@@ -250,9 +250,6 @@ function appendWorkItem(paper, item, showRc, showParticulars) {
     const fi = document.createElement('div');
     fi.className = 'fi';
     fi.dataset.wi = tagId;
-    const dot = document.createElement('span');
-    dot.className = 'fi-color-dot';
-    dot.style.background = line.color;
     const inner = document.createElement('div');
     inner.className = 'fi-inner';
     inner.style.paddingLeft = (line.indent * 13) + 'px';
@@ -261,7 +258,6 @@ function appendWorkItem(paper, item, showRc, showParticulars) {
     desc.style.color = line.color;
     desc.textContent = line.desc;
     inner.appendChild(desc);
-    fi.appendChild(dot);
     fi.appendChild(inner);
     fundList.appendChild(fi);
 
@@ -286,6 +282,84 @@ function appendWorkItem(paper, item, showRc, showParticulars) {
 
 function removeWorkItemByTag(paper, tagId) {
   paper.querySelectorAll(`[data-wi="${tagId}"]`).forEach(el => el.remove());
+}
+
+/* ════════════════════════════════════════════
+   ROW HEIGHT SYNC
+   Responsibility Center, Particulars, Fund Category, and Amount are
+   four independently-flowing lists, but line i in each one must line
+   up with line i in the others (this is what keeps the peso amount
+   sitting on the same line as its Account Code, not drifting when a
+   Program name or Particulars text wraps to two lines). Reset first,
+   measure natural height per line, then force all four to the tallest
+   of the four at that line.
+   ════════════════════════════════════════════ */
+function syncRowHeights(paper) {
+  const rcRows   = paper.querySelectorAll('.rc-row');
+  const partRows = paper.querySelectorAll('.parts-row');
+  const fiRows   = paper.querySelectorAll('.fi');
+  const amtRows  = paper.querySelectorAll('.amt-row');
+  const n = fiRows.length;
+
+  for (let i = 0; i < n; i++) {
+    [rcRows[i], partRows[i], fiRows[i], amtRows[i]].forEach(el => {
+      if (el) el.style.minHeight = '';
+    });
+  }
+  for (let i = 0; i < n; i++) {
+    const group = [rcRows[i], partRows[i], fiRows[i], amtRows[i]].filter(Boolean);
+    const maxH = Math.max(...group.map(el => el.getBoundingClientRect().height));
+    group.forEach(el => { el.style.minHeight = maxH + 'px'; });
+  }
+}
+
+/* ════════════════════════════════════════════
+   COLUMN WIDTH SYNC
+   Responsibility Center + Particulars together make up "Box A" (they
+   sit above the Certified A checkbox block); Fund Category + Amount
+   make up "Box B". The vertical divider between Particulars and Fund
+   Category should land exactly on the same line as the divider between
+   Certified Box A and Box B below it. Only the page carrying the
+   Certification block has anything to line up with — other pages fall
+   back to the static percentages already in the CSS.
+   ════════════════════════════════════════════ */
+function syncPaperWidths(paper) {
+  const mainTbl  = paper.querySelector('.main-tbl');
+  const certWrap = paper.querySelector('.cert-wrap');
+  const certA    = paper.querySelector('.cert-a');
+  const certB    = paper.querySelector('.cert-b');
+  const col1 = paper.querySelector('.col-resp');
+  const col2 = paper.querySelector('.col-part');
+  const col3 = paper.querySelector('.col-fund');
+  const col4 = paper.querySelector('.col-amt');
+  if (!mainTbl || !col1) return;
+
+  // Reset to the static fallback (matches the CSS defaults) so measurements
+  // below reflect natural sizing, not a stale forced width from before.
+  col1.style.width = '13%';
+  col2.style.width = '29%';
+  col3.style.width = '42.5%';
+  col4.style.width = '15.5%';
+  if (certA) certA.style.flex = '0 0 45%';
+  if (certB) certB.style.flex = '0 0 55%';
+
+  if (!certWrap) return; // nothing to align to on this page — keep the static split
+
+  const totalWidth = mainTbl.offsetWidth;
+  const midline    = certWrap.offsetWidth * 0.45;
+  const col4Width  = Math.round(totalWidth * 0.155);
+  const col1Width  = Math.round(totalWidth * 0.13);
+  const col2Width  = Math.round(midline - col1Width);
+  const col3Width  = Math.round((totalWidth - midline) - col4Width);
+
+  col1.style.width = col1Width + 'px';
+  col2.style.width = col2Width + 'px';
+  col3.style.width = col3Width + 'px';
+  col4.style.width = col4Width + 'px';
+
+  const boxAWidth = col1Width + col2Width;
+  if (certA) certA.style.flex = `0 0 ${boxAWidth}px`;
+  if (certB) certB.style.flex = `0 0 ${totalWidth - boxAWidth}px`;
 }
 
 /* ════════════════════════════════════════════
@@ -383,6 +457,7 @@ function renderDocument(rows) {
     const paper = createPaperSkeleton(doc);
     paper.classList.add('measuring');
     root.appendChild(paper);
+    syncPaperWidths(paper);
 
     // Fresh per-page label state: the first item placed on any page
     // always shows its RC/Particulars label, even if it's a straight
@@ -396,11 +471,13 @@ function renderDocument(rows) {
       const showParticulars = !(item.rcRaw === pagePrevRc && item.particularsRaw === pagePrevParticulars);
 
       const tagId = appendWorkItem(paper, item, showRc, showParticulars);
+      syncRowHeights(paper);
 
       if (!fitsOnPage(paper) && placedCount > 0) {
         // Doesn't fit, and we've already placed at least one item on
         // this page — undo, leave the rest for the next page.
         removeWorkItemByTag(paper, tagId);
+        syncRowHeights(paper);
         break;
       }
       // Doesn't fit even as the very first item on an empty page
@@ -427,13 +504,19 @@ function renderDocument(rows) {
   const lastPaper = papers[papers.length - 1];
   lastPaper.classList.add('measuring');
   let refs = appendClosingBlock(lastPaper, grandTotal);
+  syncPaperWidths(lastPaper);   // now cert-aware — divider locks to Certified A/B
+  syncRowHeights(lastPaper);    // column widths changed, so re-check line wrapping
   if (!fitsOnPage(lastPaper)) {
     removeClosingBlock(lastPaper, refs);
     lastPaper.classList.remove('measuring');
+    syncPaperWidths(lastPaper); // back to static fallback, no cert on this page
+    syncRowHeights(lastPaper);
+
     const finalPaper = createPaperSkeleton(doc);
     finalPaper.classList.add('measuring');
     root.appendChild(finalPaper);
     appendClosingBlock(finalPaper, grandTotal);
+    syncPaperWidths(finalPaper);
     finalPaper.classList.remove('measuring');
     papers.push(finalPaper);
   } else {

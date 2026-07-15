@@ -62,18 +62,28 @@ namespace BFAR.EBudget.Controllers
             return Ok(_db.GetProjectCategories(parentId));
         }
 
-        // Program → Project Sub-Category (direct, no category)
-        // OR Project Category → Project Sub-Category
+        // Project Category → Project Sub-Category (normal case).
+        // NOTE: parentId here is always a project_category_id. Do NOT pass a
+        // program_id into this endpoint — category IDs and program IDs share
+        // the same numeric space and can coincidentally collide (e.g.
+        // program_id=5 matching an unrelated project_category.id=5), which
+        // would silently return the wrong sub-categories. Some programs
+        // (e.g. GAS, STO) have no categories at all and link straight to a
+        // sub-category — use project-sub-categories-by-program for those.
         [HttpGet("project-sub-categories")]
         public IActionResult GetProjectSubCategories([FromQuery] int parentId)
         {
             if (parentId <= 0) return BadRequest("parentId is required.");
-            // parentId could be a project_category_id OR program_id
-            // Try category first, fall back to program
-            var results = _db.GetProjectSubCategories(parentId);
-            if (results.Count == 0)
-                results = _db.GetProjectSubCategoriesByProgram(parentId);
-            return Ok(results);
+            return Ok(_db.GetProjectSubCategories(parentId));
+        }
+
+        // Program → Project Sub-Category (direct link, used only when the
+        // program has no project categories at all).
+        [HttpGet("project-sub-categories-by-program")]
+        public IActionResult GetProjectSubCategoriesByProgram([FromQuery] int parentId)
+        {
+            if (parentId <= 0) return BadRequest("parentId is required.");
+            return Ok(_db.GetProjectSubCategoriesByProgram(parentId));
         }
 
         [HttpGet("activity-levels")]

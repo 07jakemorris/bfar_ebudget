@@ -249,16 +249,6 @@
       padding: 0 2px;
     }
 
-    /* Color dot (visual only in print view — no edit controls here) */
-    .fi-color-dot {
-      width: 9px; height: 9px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      margin-top: 4px;
-      margin-right: 3px;
-      border: 1px solid #bbb;
-    }
-
     /* ── Total Row ── */
     .total-row td {
       border: 1px solid #333;
