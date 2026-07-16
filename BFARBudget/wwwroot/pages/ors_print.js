@@ -108,14 +108,14 @@ function goBackToRecords() {
      - One RC, several account codes: RC label shows once (first row),
        then blank for the rest since the RC repeats.
    ════════════════════════════════════════════ */
-const COLORS = { fund: '#0070c0', program: '#e07000', rest: '#353535' };
+const COLORS = { fund: '#353535', program: '#353535', rest: '#353535' };
 
 function buildFundLinesForRow(d) {
   const amtStr = formatPeso(d.amount);
   const BLANK = '<-blank->';
   const lines = [];
 
-  lines.push({ desc: ([d.fullFundingSource, d.fundCategory].filter(Boolean).join(' - ')) || BLANK, color: COLORS.fund, indent: 0, amt: '' });
+  lines.push({ desc: ([d.fundCategory].filter(Boolean).join(' - ')) || BLANK, color: COLORS.fund, indent: 0, amt: '' });
   lines.push({ desc: d.programName || BLANK, color: COLORS.program, indent: 1, amt: '' });
   lines.push({ desc: d.projectCategoryName || BLANK, color: COLORS.rest, indent: 2, amt: '' });
   lines.push({ desc: d.projectSubCategoryName || BLANK, color: COLORS.rest, indent: 3, amt: '' });
@@ -328,6 +328,8 @@ function syncPaperWidths(paper) {
   const certWrap = paper.querySelector('.cert-wrap');
   const certA    = paper.querySelector('.cert-a');
   const certB    = paper.querySelector('.cert-b');
+  const sigL     = paper.querySelector('.sig-l');
+  const sigR     = paper.querySelector('.sig-r');
   const col1 = paper.querySelector('.col-resp');
   const col2 = paper.querySelector('.col-part');
   const col3 = paper.querySelector('.col-fund');
@@ -342,6 +344,8 @@ function syncPaperWidths(paper) {
   col4.style.width = '15.5%';
   if (certA) certA.style.flex = '0 0 45%';
   if (certB) certB.style.flex = '0 0 55%';
+  if (sigL)  sigL.style.flex  = '0 0 45%';
+  if (sigR)  sigR.style.flex  = '0 0 55%';
 
   if (!certWrap) return; // nothing to align to on this page — keep the static split
 
@@ -360,6 +364,10 @@ function syncPaperWidths(paper) {
   const boxAWidth = col1Width + col2Width;
   if (certA) certA.style.flex = `0 0 ${boxAWidth}px`;
   if (certB) certB.style.flex = `0 0 ${totalWidth - boxAWidth}px`;
+  // Signature box always ships together with the Certification block
+  // (both added by appendClosingBlock), so it follows the exact same line.
+  if (sigL) sigL.style.flex = `0 0 ${boxAWidth}px`;
+  if (sigR) sigR.style.flex = `0 0 ${totalWidth - boxAWidth}px`;
 }
 
 /* ════════════════════════════════════════════

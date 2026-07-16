@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BFARBudget")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e8da7c33fff44b9a87303fb20e0bbea2be14b62b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ca309059b4e41929ba1569b1090d3d35847bbc79")]
 [assembly: System.Reflection.AssemblyProductAttribute("BFARBudget")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BFARBudget")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
