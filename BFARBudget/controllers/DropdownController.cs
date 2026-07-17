@@ -23,8 +23,6 @@ namespace BFAR.EBudget.Controllers
         [HttpGet("fund-categories")]
         public IActionResult GetFundCategories() => Ok(_db.GetFundCategories());
 
-        // GET /api/dropdown/fund-detail/3
-        // Returns all 6 columns for the selected fund — called when user picks a fund category
         [HttpGet("fund-detail/{id}")]
         public IActionResult GetFundDetail(int id)
         {

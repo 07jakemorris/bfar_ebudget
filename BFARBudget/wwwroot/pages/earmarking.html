@@ -66,21 +66,6 @@
               </div>
 
               <div class="field-group">
-                <label>Payee / Supplier <span class="req-mark">*</span></label>
-                <input type="text" id="em-payee" placeholder="Full name of payee or supplier" />
-              </div>
-
-              <div class="field-group">
-                <label>Creditor Type <span class="req-mark">*</span></label>
-                <div class="radio-toggle">
-                  <input type="radio" name="em-creditor" id="em-cr-internal" value="Internal" checked />
-                  <label for="em-cr-internal">Internal</label>
-                  <input type="radio" name="em-creditor" id="em-cr-external" value="External" />
-                  <label for="em-cr-external">External</label>
-                </div>
-              </div>
-
-              <div class="field-group">
                 <label>Quarter <span class="req-mark">*</span></label>
                 <select id="em-quarter">
                   <option value="">— Select Quarter —</option>
@@ -104,6 +89,22 @@
                 <select id="em-signatory" disabled>
                   <option value="">— Select RC first —</option>
                 </select>
+              </div>
+
+              <div class="field-group">
+                <label>Lot No. <span style="font-size:10px;color:var(--text-muted);font-weight:400">(optional — for lot-based PRs)</span></label>
+                <input type="text" id="em-lot-no" placeholder="e.g. Lot 1, Lot 2" />
+              </div>
+
+              <div class="field-group">
+                <label style="display:flex;align-items:center;gap:6px;">
+                  <input type="checkbox" id="em-consolidate-mode" onchange="toggleEmConsolidateMode()" style="cursor:pointer;width:15px;height:15px;" />
+                  <span>Consolidated PR <span style="font-size:10px;color:var(--text-muted);font-weight:400">(same PR No., multiple account codes)</span></span>
+                </label>
+                <div id="em-consolidate-banner" style="display:none;margin-top:6px;background:#e0f7fa;border:1px solid var(--accent);border-radius:var(--radius-md);padding:8px 12px;font-size:12px;color:var(--accent-dark);">
+                  <strong>Consolidated PR Mode ON</strong> — Same PR No. reused per account code.
+                  Next: <span id="em-consolidate-line-preview">Line 2</span>.
+                </div>
               </div>
 
             </div>

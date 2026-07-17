@@ -153,6 +153,105 @@ function loadStatic(selectId, url, placeholder) {
 }
 
 /* ════════════════════════════════════════════
+   SMART PROGRAM CASCADE
+   Handles programs that skip Project Category
+   and link directly to Sub-Category.
+   ════════════════════════════════════════════ */
+function onProgramChange() {
+  const programId = document.getElementById('ors-program')?.value;
+
+  // Reset all downstream
+  disableDropdown('ors-projcat',    '— Select Program first —');
+  disableDropdown('ors-projsubcat', '— Select Category first —');
+  disableDropdown('ors-activity',   '— Select Sub-Category first —');
+
+  if (!programId) return;
+
+  // Try loading project categories for this program
+  fetch(`/api/dropdown/project-categories?parentId=${encodeURIComponent(programId)}`)
+    .then(r => r.json())
+    .then(items => {
+      if (items.length > 0) {
+        // Program HAS categories → show them normally
+        const sel = document.getElementById('ors-projcat');
+        sel.innerHTML = '<option value="">— Select Category —</option>';
+        items.forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item.value; opt.textContent = item.text;
+          sel.appendChild(opt);
+        });
+        sel.disabled = false;
+        // Sub-category and activity stay disabled until category is picked
+      } else {
+        // Program has NO categories → skip directly to sub-categories
+        // Keep projcat disabled with a label explaining
+        disableDropdown('ors-projcat', '— No categories for this program —');
+
+        // Load sub-categories directly by program ID
+        loadSubCatByProgram(programId);
+      }
+    })
+    .catch(() => {
+      disableDropdown('ors-projcat', '— Error loading categories —');
+    });
+}
+
+function onProjCatChange() {
+  const catId     = document.getElementById('ors-projcat')?.value;
+  const programId = document.getElementById('ors-program')?.value;
+
+  disableDropdown('ors-projsubcat', '— Select Category first —');
+  disableDropdown('ors-activity',   '— Select Sub-Category first —');
+
+  if (!catId) return;
+
+  // Load sub-categories by category (normal flow)
+  fetch(`/api/dropdown/project-sub-categories?parentId=${encodeURIComponent(catId)}`)
+    .then(r => r.json())
+    .then(items => {
+      if (items.length > 0) {
+        fillDropdown('ors-projsubcat', items, '— Select Sub-Category —');
+      } else if (programId) {
+        // Fallback: try by program if category has no sub-cats
+        loadSubCatByProgram(programId);
+      } else {
+        disableDropdown('ors-projsubcat', '— No sub-categories found —');
+      }
+    })
+    .catch(() => disableDropdown('ors-projsubcat', '— Error loading —'));
+}
+
+function loadSubCatByProgram(programId) {
+  // IMPORTANT: must hit an endpoint that filters by program_id, NOT
+  // /api/dropdown/project-sub-categories (that one filters by
+  // project_category_id — passing a program id into it can coincidentally
+  // match an unrelated category and silently load the wrong sub-categories,
+  // since program IDs and category IDs share the same numeric space).
+  fetch(`/api/dropdown/project-sub-categories-by-program?parentId=${encodeURIComponent(programId)}`)
+    .then(r => r.json())
+    .then(items => {
+      if (items.length > 0) {
+        fillDropdown('ors-projsubcat', items, '— Select Sub-Category —');
+      } else {
+        disableDropdown('ors-projsubcat', '— No sub-categories found —');
+      }
+    })
+    .catch(() => disableDropdown('ors-projsubcat', '— Error loading —'));
+}
+
+function fillDropdown(id, items, placeholder) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  sel.innerHTML = `<option value="">${placeholder}</option>`;
+  items.forEach(item => {
+    const opt = document.createElement('option');
+    opt.value = item.value; opt.textContent = item.text;
+    sel.appendChild(opt);
+  });
+  sel.disabled = items.length === 0;
+}
+
+/* ════════════════════════════════════════════
    CASCADE DROPDOWN
    ════════════════════════════════════════════ */
 function cascadeLoad(parentSelectId, apiUrl, childSelectId, placeholder) {
@@ -180,92 +279,6 @@ function cascadeLoad(parentSelectId, apiUrl, childSelectId, placeholder) {
       child.disabled = items.length === 0;
     })
     .catch(() => { child.innerHTML = '<option value="">Error loading</option>'; });
-}
-
-function fillDropdown(id, items, placeholder) {
-  const sel = document.getElementById(id);
-  if (!sel) return;
-  sel.innerHTML = `<option value="">${placeholder}</option>`;
-  items.forEach(item => {
-    const opt = document.createElement('option');
-    opt.value = item.value; opt.textContent = item.text;
-    sel.appendChild(opt);
-  });
-  sel.disabled = items.length === 0;
-}
-
-/* ════════════════════════════════════════════
-   SMART PROGRAM CASCADE
-   Some programs (e.g. GAS, STO) have NO project categories at all —
-   their sub-categories attach directly to the program instead. When
-   that's the case, skip straight to loading Sub-Categories by program
-   instead of leaving the chain stuck on an empty, disabled Category
-   dropdown.
-   ════════════════════════════════════════════ */
-function onProgramChange() {
-  const programId = document.getElementById('ors-program')?.value;
-
-  resetDownstream('ors-program'); // disables projcat, projsubcat, activity
-
-  if (!programId) { disableDropdown('ors-projcat', '— Select Program first —'); return; }
-
-  const catSel = document.getElementById('ors-projcat');
-  catSel.innerHTML = '<option value="">Loading…</option>';
-  catSel.disabled  = true;
-
-  fetch(`/api/dropdown/project-categories?parentId=${encodeURIComponent(programId)}`)
-    .then(r => r.json())
-    .then(items => {
-      if (items.length > 0) {
-        // Program HAS categories → show them normally; sub-category and
-        // activity stay disabled until a category is picked.
-        fillDropdown('ors-projcat', items, '— Select Category —');
-      } else {
-        // Program has NO categories → skip directly to sub-categories.
-        disableDropdown('ors-projcat', '— No categories for this program —');
-        loadSubCatByProgram(programId);
-      }
-    })
-    .catch(() => disableDropdown('ors-projcat', '— Error loading categories —'));
-}
-
-function onProjCatChange() {
-  const catId     = document.getElementById('ors-projcat')?.value;
-  const programId = document.getElementById('ors-program')?.value;
-
-  resetDownstream('ors-projcat'); // disables projsubcat, activity
-
-  if (!catId) { disableDropdown('ors-projsubcat', '— Select Category first —'); return; }
-
-  fetch(`/api/dropdown/project-sub-categories?parentId=${encodeURIComponent(catId)}`)
-    .then(r => r.json())
-    .then(items => {
-      if (items.length > 0) {
-        fillDropdown('ors-projsubcat', items, '— Select Sub-Category —');
-      } else if (programId) {
-        loadSubCatByProgram(programId);
-      } else {
-        disableDropdown('ors-projsubcat', '— No sub-categories found —');
-      }
-    })
-    .catch(() => disableDropdown('ors-projsubcat', '— Error loading —'));
-}
-
-function loadSubCatByProgram(programId) {
-  // IMPORTANT: this must hit an endpoint that filters by program_id,
-  // NOT /api/dropdown/project-sub-categories (that one filters by
-  // project_category_id — passing a program id into it can coincidentally
-  // match an unrelated category and silently load the wrong sub-categories).
-  fetch(`/api/dropdown/project-sub-categories-by-program?parentId=${encodeURIComponent(programId)}`)
-    .then(r => r.json())
-    .then(items => {
-      if (items.length > 0) {
-        fillDropdown('ors-projsubcat', items, '— Select Sub-Category —');
-      } else {
-        disableDropdown('ors-projsubcat', '— No sub-categories found —');
-      }
-    })
-    .catch(() => disableDropdown('ors-projsubcat', '— Error loading —'));
 }
 
 const downstreamMap = {
@@ -307,10 +320,14 @@ function saveORS() {
   const get = id => document.getElementById(id);
   const creditorEl = document.querySelector('input[name="creditor"]:checked');
 
-  const fundId = parseInt(get('ors-fund-cat')?.value) || null;
+  const fundId        = parseInt(get('ors-fund-cat')?.value) || null;
+  const isConsolidate = get('consolidate-mode')?.checked || false;
+  const orsNo         = get('ors-no')?.value.trim();
 
   const model = {
-    orsNo:            get('ors-no')?.value.trim(),
+    orsNo:            orsNo,
+    lineNo:           0,             // 0 = auto-assign on backend
+    lotNo:            null,          // Lot grouping is for Earmarking only
     orsDate:          get('ors-date')?.value,
     payee:            get('ors-payee')?.value.trim(),
     creditorType:     creditorEl?.value || 'Internal',
@@ -327,7 +344,7 @@ function saveORS() {
 
   // Validation
   if (!model.orsNo)           return showToast('ORS number is required.', 'error');
-  if (!model.payee)           return showToast('Payee is required.', 'error');
+  if (!model.payee)           return showToast('Payee / Supplier is required.', 'error');
   if (!model.quarter)         return showToast('Quarter is required.', 'error');
   if (!model.rcId)            return showToast('Responsibility Center is required.', 'error');
   if (!model.signatoryId)     return showToast('Signatory is required.', 'error');
@@ -335,7 +352,7 @@ function saveORS() {
   if (!model.activityLevelId) return showToast('Activity Level is required.', 'error');
   if (!model.accountCodeId)   return showToast('Account Code is required.', 'error');
   if (!model.fundId)          return showToast('Fund Category is required.', 'error');
-  if (model.amount <= 0)      return showToast('Please enter a valid amount.', 'error');
+  if (model.amount <= 0)      return showToast('Please enter a valid obligation amount.', 'error');
 
   const btn = document.getElementById('btn-obligate');
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
@@ -350,14 +367,31 @@ function saveORS() {
     if (!res.ok) throw new Error(data.error || 'Save failed.');
 
     // ── Success ───────────────────────────────────────────────────────────
-    showSuccessPopup(model.orsNo);
+    showSuccessPopup(model.orsNo + (data.lineNo > 1 ? ' Line ' + data.lineNo : ''));
 
-    clearORS();
+    if (isConsolidate) {
+      // Consolidated mode — keep ORS No, date, payee, RC, signatory, fund
+      // Only clear account code, activity level, amount, lot no
+      const keepFields = ['ors-no','ors-date','ors-payee','ors-quarter',
+                          'ors-rc','ors-signatory','ors-fund-cat','ors-particulars'];
+      const clearFields = ['ors-acct','ors-subacct','ors-amount'];
+      clearFields.forEach(id => { const el = get(id); if (el) el.value = ''; });
 
-    // Re-lock ORS field and get next number
-    const input = document.getElementById('ors-no');
-    if (input && !input.readOnly) toggleOrsEdit(); // re-lock if was manual
-    fetchNextOrsNumber();
+      // Disable account code selects to force re-pick
+      ['ors-acct','ors-subacct'].forEach(id => {
+        const el = get(id); if (el) el.disabled = true;
+      });
+
+      // Update line preview
+      updateConsolidateLinePreview(model.orsNo);
+      showToast('Line ' + data.lineNo + ' saved. Add another account code or uncheck Consolidated PR when done.', 'success');
+    } else {
+      clearORS();
+      // Re-lock ORS field and get next number
+      const input = document.getElementById('ors-no');
+      if (input && !input.readOnly) toggleOrsEdit();
+      fetchNextOrsNumber();
+    }
 
     loadObligationsTable();
   })
@@ -381,21 +415,31 @@ function loadObligationsTable() {
       tbody.innerHTML = '';
 
       if (records.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem">No obligation records found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:2rem">No obligation records found.</td></tr>';
       } else {
+        // Group rows by ORS No for visual grouping
+        let lastOrsNo = '';
         records.forEach(r => {
+          const isNewGroup = r.orsNo !== lastOrsNo;
+          lastOrsNo = r.orsNo;
+
           tbody.insertAdjacentHTML('beforeend', `
-            <tr>
-              <td>${esc(r.orsNo)}</td>
+            <tr style="${isNewGroup && r.lineNo > 1 ? 'border-top:2px solid var(--accent-light)' : ''}">
+              <td style="font-weight:${isNewGroup ? '700' : '400'};color:${isNewGroup ? 'var(--accent-dark)' : 'var(--text-muted)'}">
+                ${isNewGroup ? esc(r.orsNo) : '↳'}
+              </td>
+              <td style="text-align:center">
+                <span class="badge badge-teal" style="font-size:10px">L${r.lineNo}</span>
+              </td>
               <td>${esc(r.orsDate)}</td>
               <td>${esc(r.rcName)}</td>
-              <td title="${esc(r.particularsShort)}">${esc(r.particularsShort)}${r.particularsShort?.length >= 60 ? '…' : ''}</td>
+              <td style="font-size:11px;color:var(--accent-dark)">${esc(r.accountCode || '—')}</td>
+              <td title="${esc(r.particularsShort)}">${esc(r.particularsShort)}${(r.particularsShort?.length >= 60) ? '…' : ''}</td>
               <td style="text-align:right">${parseFloat(r.amount).toLocaleString('en-PH',{minimumFractionDigits:2})}</td>
               <td style="text-align:center"><span class="badge ${statusBadge(r.status)}">${esc(r.status)}</span></td>
               <td style="text-align:center;white-space:nowrap;display:flex;gap:5px;justify-content:center;">
                 <button class="btn btn-sm" style="background:#007b8a;color:#fff;border-color:#007b8a;"
-                  onclick="printORS('${esc(r.orsNo)}')"
-                  title="Print ORS Form">
+                  onclick="printORS(${r.id})" title="Print ORS Form">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                   Print
                 </button>
@@ -412,7 +456,7 @@ function loadObligationsTable() {
     })
     .catch(() => {
       const tbody = document.getElementById('ors-tbody');
-      if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="color:var(--danger);padding:1rem">Failed to load records.</td></tr>';
+      if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="color:var(--danger);padding:1rem">Failed to load records.</td></tr>';
     });
 }
 
@@ -420,14 +464,34 @@ function loadObligationsTable() {
    DELETE
    ════════════════════════════════════════════ */
 /* ════════════════════════════════════════════
-   PRINT ORS FORM
-   Opens ors_print.html?ors=X in a new tab. X is the ORS/BURS number,
-   not a row id — a single ORS number can cover multiple obligation
-   rows (consolidated obligations across RCs, or one RC obligated
-   against several account codes), so the print page fetches and
-   groups everything sharing that number, not just one row.
+   CONSOLIDATED PR MODE
    ════════════════════════════════════════════ */
-function printORS(orsNo) {
+function toggleConsolidateMode() {
+  const isOn   = document.getElementById('consolidate-mode')?.checked;
+  const banner = document.getElementById('consolidate-banner');
+  const orsNo  = document.getElementById('ors-no')?.value;
+
+  if (banner) banner.style.display = isOn ? '' : 'none';
+
+  if (isOn && orsNo) {
+    // Lock ORS No. so it stays the same across lines
+    const input = document.getElementById('ors-no');
+    if (input && !input.readOnly) toggleOrsEdit(); // lock it
+    updateConsolidateLinePreview(orsNo);
+  }
+}
+
+function updateConsolidateLinePreview(orsNo) {
+  if (!orsNo) return;
+  fetch('/api/obligations/next-line-no?orsNo=' + encodeURIComponent(orsNo))
+    .then(r => r.json())
+    .then(d => {
+      const el = document.getElementById('consolidate-line-preview');
+      if (el) el.textContent = 'Line ' + d.lineNo;
+    })
+    .catch(() => {});
+}
+function printORS(id) {
   window.open('/pages/ors_print.html?ors=' + encodeURIComponent(orsNo), '_blank');
 }
 
@@ -472,6 +536,12 @@ function clearORS() {
 
   const internal = document.getElementById('cr-internal');
   if (internal) internal.checked = true;
+
+  // Reset consolidate mode
+  const consMode = document.getElementById('consolidate-mode');
+  if (consMode) consMode.checked = false;
+  const consBanner = document.getElementById('consolidate-banner');
+  if (consBanner) consBanner.style.display = 'none';
 
   const hint = document.getElementById('char-counter');
   if (hint) { hint.textContent = '0 characters'; hint.className = 'char-counter'; }

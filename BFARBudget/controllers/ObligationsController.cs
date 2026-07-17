@@ -4,10 +4,6 @@ using MySql.Data.MySqlClient;
 
 namespace BFAR.EBudget.Controllers
 {
-    /// <summary>
-    /// Handles saving, listing, and deleting obligation records.
-    /// Base route: /api/obligations
-    /// </summary>
     [ApiController]
     [Route("api/obligations")]
     public class ObligationsController : ControllerBase
@@ -20,8 +16,6 @@ namespace BFAR.EBudget.Controllers
         }
 
         // GET /api/obligations/next-ors-number
-        // Called on form open and after every successful save.
-        // Returns: { "orsNo": "26-06-1506" }
         [HttpGet("next-ors-number")]
         public IActionResult GetNextOrsNumber()
         {
@@ -29,6 +23,26 @@ namespace BFAR.EBudget.Controllers
             {
                 string nextNo = _db.GetNextOrsNumber();
                 return Ok(new { orsNo = nextNo });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        // GET /api/obligations/next-line-no?orsNo=26-06-0001
+        // Returns the next available line number for a given ORS No.
+        // Used when consolidating multiple account codes under one PR.
+        [HttpGet("next-line-no")]
+        public IActionResult GetNextLineNo([FromQuery] string orsNo)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(orsNo))
+                    return BadRequest(new { error = "orsNo is required." });
+
+                int lineNo = _db.GetNextLineNo(orsNo);
+                return Ok(new { orsNo = orsNo, lineNo = lineNo });
             }
             catch (Exception ex)
             {
@@ -52,9 +66,9 @@ namespace BFAR.EBudget.Controllers
             }
         }
 
-        // GET /api/obligations/by-ors-no/26-07-1460
+        // GET /api/obligations/by-ors-no/26-07-0001
         // Returns every obligation row sharing this ORS/BURS number, ordered
-        // earliest-first. Used by the print page for consolidated obligations
+        // by line_no. Used by the print page for consolidated obligations
         // (multiple Responsibility Centers, and/or multiple account codes,
         // filed under one ORS number).
         [HttpGet("by-ors-no/{orsNo}")]
@@ -92,7 +106,7 @@ namespace BFAR.EBudget.Controllers
         [HttpPost]
         public IActionResult Save([FromBody] ObligationModel model)
         {
-            // ── Server-side validation ───────────────────────────────────────
+            // ── Validation ────────────────────────────────────────────────────
             if (string.IsNullOrWhiteSpace(model.OrsNo))
                 return BadRequest(new { error = "ORS/BURS No. is required." });
 
@@ -120,9 +134,14 @@ namespace BFAR.EBudget.Controllers
             if (model.Amount <= 0)
                 return BadRequest(new { error = "Amount must be greater than zero." });
 
-            // ── Resolve fund detail from DB using fundId ─────────────────────
-            // JS only sends fundId. We look up all 6 columns here so the
-            // model has them populated before SaveObligation() is called.
+            // ── Auto-assign line_no if not provided ───────────────────────────
+            // For a new ORS No., line_no = 1.
+            // For a consolidated PR (same ORS No., different account code),
+            // line_no auto-increments.
+            if (model.LineNo <= 0)
+                model.LineNo = _db.GetNextLineNo(model.OrsNo);
+
+            // ── Resolve fund detail ───────────────────────────────────────────
             if (model.FundId.HasValue && model.FundId.Value > 0)
             {
                 var fund = _db.GetFundDetail(model.FundId.Value);
@@ -140,15 +159,16 @@ namespace BFAR.EBudget.Controllers
                 return BadRequest(new { error = "Fund Category is required." });
             }
 
-            // ── Save ─────────────────────────────────────────────────────────
+            // ── Save ──────────────────────────────────────────────────────────
             try
             {
                 int newId = _db.SaveObligation(model);
-                return Ok(new { id = newId, message = $"Obligation {model.OrsNo} saved successfully." });
-            }
-            catch (MySqlException ex) when (ex.Number == 1062)
-            {
-                return Conflict(new { error = $"ORS/BURS No. '{model.OrsNo}' already exists." });
+                return Ok(new
+                {
+                    id      = newId,
+                    lineNo  = model.LineNo,
+                    message = $"Obligation {model.OrsNo} Line {model.LineNo} saved successfully."
+                });
             }
             catch (Exception ex)
             {
@@ -156,7 +176,7 @@ namespace BFAR.EBudget.Controllers
             }
         }
 
-        // DELETE /api/obligations/5
+        // DELETE /api/obligations/{id}
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {

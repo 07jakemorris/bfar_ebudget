@@ -98,11 +98,11 @@ namespace BFAR.EBudget.Data
             GetItems("SELECT id, CONCAT(name, ' – ', position) FROM signatory WHERE rc_id = @id AND is_active = 1 ORDER BY name",
                 new[] { new MySqlParameter("@id", rcId) });
 
-        // ── Get full obligation detail for ORS print ─────────────────────────
         // Shared SELECT used by both single-record lookup (by id) and
         // grouped lookup (by ors_no, for consolidated/multi-line ORS printing).
         private const string ObligationDetailSql = @"
-                SELECT  o.id, o.ors_no, DATE_FORMAT(o.ors_date,'%m/%d/%Y') AS ors_date,
+                SELECT  o.id, o.ors_no, o.line_no, COALESCE(o.lot_no, '') AS lot_no,
+                        DATE_FORMAT(o.ors_date,'%m/%d/%Y') AS ors_date,
                         o.payee, o.particulars, o.amount, o.status,
                         rc.code  AS rc_code,  rc.name  AS rc_name,
                         s.name   AS sig_name, s.position AS sig_pos,
@@ -131,22 +131,24 @@ namespace BFAR.EBudget.Data
         {
             return new ObligationDetail
             {
-                Id                 = rdr.GetInt32(rdr.GetOrdinal("id")),
-                OrsNo              = rdr.GetValue(rdr.GetOrdinal("ors_no")).ToString() ?? "",
-                OrsDate            = rdr.GetValue(rdr.GetOrdinal("ors_date")).ToString() ?? "",
-                Payee              = rdr.GetValue(rdr.GetOrdinal("payee")).ToString() ?? "",
-                Particulars        = rdr.GetValue(rdr.GetOrdinal("particulars")).ToString() ?? "",
-                Amount             = rdr.GetDecimal(rdr.GetOrdinal("amount")),
-                Status             = rdr.GetValue(rdr.GetOrdinal("status")).ToString() ?? "",
-                RcCode             = rdr.IsDBNull(rdr.GetOrdinal("rc_code"))  ? "" : rdr.GetValue(rdr.GetOrdinal("rc_code")).ToString()!,
-                RcName             = rdr.IsDBNull(rdr.GetOrdinal("rc_name"))  ? "" : rdr.GetValue(rdr.GetOrdinal("rc_name")).ToString()!,
-                SignatoryName      = rdr.IsDBNull(rdr.GetOrdinal("sig_name")) ? "" : rdr.GetValue(rdr.GetOrdinal("sig_name")).ToString()!,
-                SignatoryPosition  = rdr.IsDBNull(rdr.GetOrdinal("sig_pos"))  ? "" : rdr.GetValue(rdr.GetOrdinal("sig_pos")).ToString()!,
-                FundCluster        = rdr.IsDBNull(rdr.GetOrdinal("fund_cluster"))       ? "" : rdr.GetValue(rdr.GetOrdinal("fund_cluster")).ToString()!,
-                FinancingSource    = rdr.IsDBNull(rdr.GetOrdinal("financing_source"))   ? "" : rdr.GetValue(rdr.GetOrdinal("financing_source")).ToString()!,
-                AuthorizationCode  = rdr.IsDBNull(rdr.GetOrdinal("authorization_code")) ? "" : rdr.GetValue(rdr.GetOrdinal("authorization_code")).ToString()!,
-                FundCategory       = rdr.IsDBNull(rdr.GetOrdinal("fund_category"))      ? "" : rdr.GetValue(rdr.GetOrdinal("fund_category")).ToString()!,
-                FullFundingSource  = rdr.IsDBNull(rdr.GetOrdinal("full_funding_source")) ? "" : rdr.GetValue(rdr.GetOrdinal("full_funding_source")).ToString()!,
+                Id                = rdr.GetInt32(rdr.GetOrdinal("id")),
+                OrsNo             = rdr.GetValue(rdr.GetOrdinal("ors_no")).ToString() ?? "",
+                LineNo            = rdr.GetInt32(rdr.GetOrdinal("line_no")),
+                LotNo             = rdr.GetValue(rdr.GetOrdinal("lot_no")).ToString() ?? "",
+                OrsDate           = rdr.GetValue(rdr.GetOrdinal("ors_date")).ToString() ?? "",
+                Payee             = rdr.GetValue(rdr.GetOrdinal("payee")).ToString() ?? "",
+                Particulars       = rdr.GetValue(rdr.GetOrdinal("particulars")).ToString() ?? "",
+                Amount            = rdr.GetDecimal(rdr.GetOrdinal("amount")),
+                Status            = rdr.GetValue(rdr.GetOrdinal("status")).ToString() ?? "",
+                RcCode            = rdr.IsDBNull(rdr.GetOrdinal("rc_code"))  ? "" : rdr.GetValue(rdr.GetOrdinal("rc_code")).ToString()!,
+                RcName            = rdr.IsDBNull(rdr.GetOrdinal("rc_name"))  ? "" : rdr.GetValue(rdr.GetOrdinal("rc_name")).ToString()!,
+                SignatoryName     = rdr.IsDBNull(rdr.GetOrdinal("sig_name")) ? "" : rdr.GetValue(rdr.GetOrdinal("sig_name")).ToString()!,
+                SignatoryPosition = rdr.IsDBNull(rdr.GetOrdinal("sig_pos"))  ? "" : rdr.GetValue(rdr.GetOrdinal("sig_pos")).ToString()!,
+                FundCluster       = rdr.IsDBNull(rdr.GetOrdinal("fund_cluster"))       ? "" : rdr.GetValue(rdr.GetOrdinal("fund_cluster")).ToString()!,
+                FinancingSource   = rdr.IsDBNull(rdr.GetOrdinal("financing_source"))   ? "" : rdr.GetValue(rdr.GetOrdinal("financing_source")).ToString()!,
+                AuthorizationCode = rdr.IsDBNull(rdr.GetOrdinal("authorization_code")) ? "" : rdr.GetValue(rdr.GetOrdinal("authorization_code")).ToString()!,
+                FundCategory      = rdr.IsDBNull(rdr.GetOrdinal("fund_category"))      ? "" : rdr.GetValue(rdr.GetOrdinal("fund_category")).ToString()!,
+                FullFundingSource = rdr.IsDBNull(rdr.GetOrdinal("full_funding_source")) ? "" : rdr.GetValue(rdr.GetOrdinal("full_funding_source")).ToString()!,
 
                 ProgramId          = rdr.IsDBNull(rdr.GetOrdinal("program_id")) ? (int?)null : rdr.GetInt32(rdr.GetOrdinal("program_id")),
                 ProgramName        = rdr.IsDBNull(rdr.GetOrdinal("program_name")) ? "" : rdr.GetValue(rdr.GetOrdinal("program_name")).ToString()!,
@@ -157,17 +159,17 @@ namespace BFAR.EBudget.Data
                 ProjectSubCategoryId   = rdr.IsDBNull(rdr.GetOrdinal("project_subcat_id")) ? (int?)null : rdr.GetInt32(rdr.GetOrdinal("project_subcat_id")),
                 ProjectSubCategoryName = rdr.IsDBNull(rdr.GetOrdinal("project_subcat_name")) ? "" : rdr.GetValue(rdr.GetOrdinal("project_subcat_name")).ToString()!,
 
-                ExpenseClassId     = rdr.IsDBNull(rdr.GetOrdinal("expense_class_id")) ? (int?)null : rdr.GetInt32(rdr.GetOrdinal("expense_class_id")),
-                ExpenseClassCode   = rdr.IsDBNull(rdr.GetOrdinal("expense_class_code")) ? "" : rdr.GetValue(rdr.GetOrdinal("expense_class_code")).ToString()!,
-                ExpenseClassName   = rdr.IsDBNull(rdr.GetOrdinal("expense_class_name")) ? "" : rdr.GetValue(rdr.GetOrdinal("expense_class_name")).ToString()!,
-
-                AccountCode        = rdr.IsDBNull(rdr.GetOrdinal("account_code"))   ? "" : rdr.GetValue(rdr.GetOrdinal("account_code")).ToString()!,
-                AccountDesc        = rdr.IsDBNull(rdr.GetOrdinal("account_desc"))   ? "" : rdr.GetValue(rdr.GetOrdinal("account_desc")).ToString()!,
-                SubAccountCode     = rdr.IsDBNull(rdr.GetOrdinal("sub_account_code")) ? "" : rdr.GetValue(rdr.GetOrdinal("sub_account_code")).ToString()!,
-                SubAccountDesc     = rdr.IsDBNull(rdr.GetOrdinal("sub_account_desc")) ? "" : rdr.GetValue(rdr.GetOrdinal("sub_account_desc")).ToString()!,
+                ExpenseClassId    = rdr.IsDBNull(rdr.GetOrdinal("expense_class_id")) ? (int?)null : rdr.GetInt32(rdr.GetOrdinal("expense_class_id")),
+                ExpenseClassCode  = rdr.IsDBNull(rdr.GetOrdinal("expense_class_code")) ? "" : rdr.GetValue(rdr.GetOrdinal("expense_class_code")).ToString()!,
+                ExpenseClassName  = rdr.IsDBNull(rdr.GetOrdinal("expense_class_name")) ? "" : rdr.GetValue(rdr.GetOrdinal("expense_class_name")).ToString()!,
+                AccountCode       = rdr.IsDBNull(rdr.GetOrdinal("account_code"))   ? "" : rdr.GetValue(rdr.GetOrdinal("account_code")).ToString()!,
+                AccountDesc       = rdr.IsDBNull(rdr.GetOrdinal("account_desc"))   ? "" : rdr.GetValue(rdr.GetOrdinal("account_desc")).ToString()!,
+                SubAccountCode    = rdr.IsDBNull(rdr.GetOrdinal("sub_account_code")) ? "" : rdr.GetValue(rdr.GetOrdinal("sub_account_code")).ToString()!,
+                SubAccountDesc    = rdr.IsDBNull(rdr.GetOrdinal("sub_account_desc")) ? "" : rdr.GetValue(rdr.GetOrdinal("sub_account_desc")).ToString()!,
             };
         }
 
+        // ── Get full obligation detail for ORS print ─────────────────────────
         public ObligationDetail? GetObligationDetail(int id)
         {
             string sql = ObligationDetailSql + " WHERE o.id = @id LIMIT 1";
@@ -183,14 +185,14 @@ namespace BFAR.EBudget.Data
         }
 
         // Returns every obligation row sharing the given ORS/BURS number,
-        // ordered earliest-first (by id — the auto-increment column
-        // reflects creation order). Used for consolidated ORS printing:
-        // one ORS number can span several Responsibility Centers, and/or
-        // one RC can carry several account codes, each stored as its own
-        // row in `obligations`.
+        // ordered by line_no (the explicit, intentional ordering for
+        // consolidated obligations — set by GetNextLineNo when each line is
+        // saved). Used for consolidated ORS printing: one ORS number can
+        // span several Responsibility Centers, and/or one RC can carry
+        // several account codes, each stored as its own row.
         public List<ObligationDetail> GetObligationsByOrsNo(string orsNo)
         {
-            string sql = ObligationDetailSql + " WHERE o.ors_no = @orsNo ORDER BY o.id ASC";
+            string sql = ObligationDetailSql + " WHERE o.ors_no = @orsNo ORDER BY o.line_no ASC, o.id ASC";
 
             var results = new List<ObligationDetail>();
             using var conn = new MySqlConnection(_connStr);
@@ -210,14 +212,14 @@ namespace BFAR.EBudget.Data
         {
             const string sql = @"
                 INSERT INTO obligations
-                    (ors_no, ors_date, payee, creditor_type, quarter,
+                    (ors_no, line_no, lot_no, ors_date, payee, creditor_type, quarter,
                      rc_id, signatory_id, particulars,
                      activity_level_id, account_code_id, sub_account_code_id,
                      fund_id, fund_cluster, financing_source,
                      authorization_code, fund_category, full_funding_source,
                      amount, status, created_by)
                 VALUES
-                    (@ors_no, @ors_date, @payee, @creditor_type, @quarter,
+                    (@ors_no, @line_no, @lot_no, @ors_date, @payee, @creditor_type, @quarter,
                      @rc_id, @signatory_id, @particulars,
                      @activity_level_id, @account_code_id, @sub_account_code_id,
                      @fund_id, @fund_cluster, @financing_source,
@@ -229,6 +231,8 @@ namespace BFAR.EBudget.Data
             using var cmd  = new MySqlCommand(sql, conn);
 
             cmd.Parameters.AddWithValue("@ors_no",             model.OrsNo);
+            cmd.Parameters.AddWithValue("@line_no",            model.LineNo);
+            cmd.Parameters.AddWithValue("@lot_no",             string.IsNullOrWhiteSpace(model.LotNo) ? (object)DBNull.Value : model.LotNo);
             cmd.Parameters.AddWithValue("@ors_date",           model.OrsDate);
             cmd.Parameters.AddWithValue("@payee",              model.Payee);
             cmd.Parameters.AddWithValue("@creditor_type",      model.CreditorType);
@@ -236,7 +240,6 @@ namespace BFAR.EBudget.Data
             cmd.Parameters.AddWithValue("@rc_id",              model.RcId);
             cmd.Parameters.AddWithValue("@signatory_id",       model.SignatoryId);
             cmd.Parameters.AddWithValue("@particulars",        model.Particulars);
-            // Fund columns — must come before activity/account to match INSERT order
             cmd.Parameters.AddWithValue("@fund_id",
                 model.FundId.HasValue ? (object)model.FundId.Value : DBNull.Value);
             cmd.Parameters.AddWithValue("@fund_cluster",        model.FundCluster        ?? (object)DBNull.Value);
@@ -284,22 +287,43 @@ namespace BFAR.EBudget.Data
             return $"{prefix}{nextSeq:D4}";
         }
 
+        // ── Get next line number for a consolidated ORS No. ──────────────────
+        // When the same ORS No. is used for multiple account codes,
+        // each gets an auto-incremented line number (1, 2, 3...)
+        public int GetNextLineNo(string orsNo)
+        {
+            const string sql = @"
+                SELECT COALESCE(MAX(line_no), 0) + 1
+                FROM   obligations
+                WHERE  ors_no = @orsNo";
+
+            using var conn = new MySqlConnection(_connStr);
+            using var cmd  = new MySqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@orsNo", orsNo);
+            conn.Open();
+            return Convert.ToInt32(cmd.ExecuteScalar());
+        }
+
         // ── Get obligations list ──────────────────────────────────────────────
         public List<ObligationRecord> GetObligations()
         {
             const string sql = @"
                 SELECT  o.id,
                         o.ors_no,
-                        DATE_FORMAT(o.ors_date, '%Y-%m-%d') AS ors_date,
-                        rc.name                             AS rc_name,
-                        LEFT(o.particulars, 60)             AS particulars_short,
+                        o.line_no,
+                        COALESCE(o.lot_no, '')               AS lot_no,
+                        DATE_FORMAT(o.ors_date, '%Y-%m-%d')  AS ors_date,
+                        rc.name                              AS rc_name,
+                        LEFT(o.particulars, 60)              AS particulars_short,
+                        CONCAT(ac.code, ' – ', ac.description) AS account_code,
                         o.amount,
                         o.status,
-                        COALESCE(o.fund_category, '')       AS fund_category
+                        COALESCE(o.fund_category, '')        AS fund_category
                 FROM    obligations o
                 INNER JOIN responsibility_center rc ON rc.id = o.rc_id
-                ORDER BY o.created_at DESC
-                LIMIT 100";
+                LEFT  JOIN account_code          ac ON ac.id = o.account_code_id
+                ORDER BY o.ors_no, o.line_no, o.created_at DESC
+                LIMIT 200";
 
             var list = new List<ObligationRecord>();
             using var conn = new MySqlConnection(_connStr);
@@ -310,14 +334,17 @@ namespace BFAR.EBudget.Data
             {
                 list.Add(new ObligationRecord
                 {
-                    Id               = rdr.GetInt32("id"),
-                    OrsNo            = rdr.GetString("ors_no"),
-                    OrsDate          = rdr.GetString("ors_date"),
-                    RcName           = rdr.GetString("rc_name"),
-                    ParticularsShort = rdr.GetString("particulars_short"),
-                    Amount           = rdr.GetDecimal("amount"),
-                    Status           = rdr.GetString("status"),
-                    FundCategory     = rdr.GetString("fund_category")
+                    Id               = rdr.GetInt32(rdr.GetOrdinal("id")),
+                    OrsNo            = rdr.GetValue(rdr.GetOrdinal("ors_no")).ToString()!,
+                    LineNo           = rdr.GetInt32(rdr.GetOrdinal("line_no")),
+                    LotNo            = rdr.GetValue(rdr.GetOrdinal("lot_no")).ToString()!,
+                    OrsDate          = rdr.GetValue(rdr.GetOrdinal("ors_date")).ToString()!,
+                    RcName           = rdr.GetValue(rdr.GetOrdinal("rc_name")).ToString()!,
+                    ParticularsShort = rdr.GetValue(rdr.GetOrdinal("particulars_short")).ToString()!,
+                    AccountCode      = rdr.IsDBNull(rdr.GetOrdinal("account_code")) ? "" : rdr.GetValue(rdr.GetOrdinal("account_code")).ToString()!,
+                    Amount           = rdr.GetDecimal(rdr.GetOrdinal("amount")),
+                    Status           = rdr.GetValue(rdr.GetOrdinal("status")).ToString()!,
+                    FundCategory     = rdr.GetValue(rdr.GetOrdinal("fund_category")).ToString()!
                 });
             }
             return list;
@@ -342,6 +369,8 @@ namespace BFAR.EBudget.Data
     {
         public int     Id                { get; set; }
         public string  OrsNo             { get; set; } = "";
+        public int     LineNo            { get; set; } = 1;
+        public string  LotNo             { get; set; } = "";
         public string  OrsDate           { get; set; } = "";
         public string  Payee             { get; set; } = "";
         public string  Particulars       { get; set; } = "";
@@ -389,6 +418,8 @@ namespace BFAR.EBudget.Data
     public class ObligationModel
     {
         public string   OrsNo             { get; set; } = "";
+        public int      LineNo            { get; set; } = 1;    // line within same ORS No.
+        public string?  LotNo             { get; set; }          // optional lot grouping
         public DateTime OrsDate           { get; set; }
         public string   Payee             { get; set; } = "";
         public string   CreditorType      { get; set; } = "Internal";
@@ -414,9 +445,12 @@ namespace BFAR.EBudget.Data
     {
         public int     Id               { get; set; }
         public string  OrsNo            { get; set; } = "";
+        public int     LineNo           { get; set; } = 1;
+        public string  LotNo            { get; set; } = "";
         public string  OrsDate          { get; set; } = "";
         public string  RcName           { get; set; } = "";
         public string  ParticularsShort { get; set; } = "";
+        public string  AccountCode      { get; set; } = "";
         public decimal Amount           { get; set; }
         public string  Status           { get; set; } = "";
         public string  FundCategory     { get; set; } = "";

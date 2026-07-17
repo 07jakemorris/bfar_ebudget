@@ -115,7 +115,7 @@ function buildFundLinesForRow(d) {
   const BLANK = '<-blank->';
   const lines = [];
 
-  lines.push({ desc: ([d.fundCategory].filter(Boolean).join(' - ')) || BLANK, color: COLORS.fund, indent: 0, amt: '' });
+  lines.push({ desc: ([d.fullFundingSource, d.fundCategory].filter(Boolean).join(' - ')) || BLANK, color: COLORS.fund, indent: 0, amt: '' });
   lines.push({ desc: d.programName || BLANK, color: COLORS.program, indent: 1, amt: '' });
   lines.push({ desc: d.projectCategoryName || BLANK, color: COLORS.rest, indent: 2, amt: '' });
   lines.push({ desc: d.projectSubCategoryName || BLANK, color: COLORS.rest, indent: 3, amt: '' });

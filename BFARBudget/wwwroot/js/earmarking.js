@@ -141,11 +141,7 @@ function onEmProjCatChange() {
 }
 
 function emLoadSubCatByProgram(programId) {
-  // IMPORTANT: this must hit an endpoint that filters by program_id,
-  // NOT /api/dropdown/project-sub-categories (that one filters by
-  // project_category_id — passing a program id into it can coincidentally
-  // match an unrelated category and silently load the wrong sub-categories).
-  fetch(`/api/dropdown/project-sub-categories-by-program?parentId=${encodeURIComponent(programId)}`)
+  fetch(`/api/dropdown/project-sub-categories?parentId=${encodeURIComponent(programId)}`)
     .then(r => r.json())
     .then(items => {
       if (items.length > 0) {
@@ -254,13 +250,16 @@ function emCharCount() {
    ════════════════════════════════════════════ */
 function saveEarmark() {
   const get = id => document.getElementById(id);
-  const creditorEl = document.querySelector('input[name="em-creditor"]:checked');
+
+  const isConsolidate = get('em-consolidate-mode')?.checked || false;
+  const prNo          = get('em-no')?.value.trim();
 
   const model = {
-    prNo:             get('em-no')?.value.trim(),
+    prNo:             prNo,
     earmarkedDate:    get('em-date')?.value,
-    payee:            get('em-payee')?.value.trim(),
-    creditorType:     creditorEl?.value || 'Internal',
+    payee:            '',         // Not collected at PR stage — supplier unknown
+    creditorType:     'Internal', // Default
+    lotNo:            get('em-lot-no')?.value.trim() || null,
     quarter:          get('em-quarter')?.value,
     rcId:             parseInt(get('em-rc')?.value)          || 0,
     signatoryId:      parseInt(get('em-signatory')?.value)   || 0,
@@ -273,9 +272,8 @@ function saveEarmark() {
     remarks:          get('em-remarks')?.value.trim() || null
   };
 
-  // Validation
+  // Validation — no payee or creditor type for PR
   if (!model.prNo)             return emShowToast('PR No. is required.', 'error');
-  if (!model.payee)            return emShowToast('Payee is required.', 'error');
   if (!model.quarter)          return emShowToast('Quarter is required.', 'error');
   if (!model.rcId)             return emShowToast('Responsibility Center is required.', 'error');
   if (!model.signatoryId)      return emShowToast('Signatory is required.', 'error');
@@ -296,10 +294,24 @@ function saveEarmark() {
   .then(async res => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Save failed.');
-    emShowSuccessPopup(model.prNo);
-    clearEarmark();
-    loadEarmarksTable();
-    loadEarmarkSummary();
+
+    if (isConsolidate) {
+      // Keep PR No, date, quarter, RC, signatory, fund — clear only account code + amount
+      ['em-acct','em-subacct','em-amount','em-lot-no'].forEach(id => {
+        const el = get(id); if (el) el.value = '';
+      });
+      ['em-acct','em-subacct'].forEach(id => {
+        const el = get(id); if (el) el.disabled = true;
+      });
+      emShowToast('PR line saved. Add another account code or uncheck Consolidated PR when done.', 'success');
+      loadEarmarksTable();
+      loadEarmarkSummary();
+    } else {
+      emShowSuccessPopup(model.prNo);
+      clearEarmark();
+      loadEarmarksTable();
+      loadEarmarkSummary();
+    }
   })
   .catch(err => emShowToast('Error: ' + err.message, 'error'))
   .finally(() => {
@@ -397,6 +409,15 @@ function releaseEarmark(id, btn) {
 }
 
 /* ════════════════════════════════════════════
+   CONSOLIDATED PR MODE (Earmarking)
+   ════════════════════════════════════════════ */
+function toggleEmConsolidateMode() {
+  const isOn   = document.getElementById('em-consolidate-mode')?.checked;
+  const banner = document.getElementById('em-consolidate-banner');
+  if (banner) banner.style.display = isOn ? '' : 'none';
+}
+
+/* ════════════════════════════════════════════
    CANCEL EARMARK
    ════════════════════════════════════════════ */
 function cancelEarmark(id, btn) {
@@ -417,7 +438,7 @@ function cancelEarmark(id, btn) {
    CLEAR FORM
    ════════════════════════════════════════════ */
 function clearEarmark() {
-  ['em-no','em-payee','em-purpose','em-remarks','em-amount'].forEach(id => {
+  ['em-no','em-purpose','em-remarks','em-amount','em-lot-no'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   ['em-quarter','em-rc','em-program','em-expclass'].forEach(id => {
@@ -428,6 +449,12 @@ function clearEarmark() {
   if (fundSel) fundSel.selectedIndex = 0;
   const preview = document.getElementById('em-fund-preview');
   if (preview) preview.classList.add('hidden');
+
+  // Reset consolidate mode
+  const consMode = document.getElementById('em-consolidate-mode');
+  if (consMode) consMode.checked = false;
+  const consBanner = document.getElementById('em-consolidate-banner');
+  if (consBanner) consBanner.style.display = 'none';
 
   emDisable('em-signatory',  '— Select RC first —');
   emDisable('em-projcat',    '— Select Program first —');
