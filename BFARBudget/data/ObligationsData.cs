@@ -101,7 +101,7 @@ namespace BFAR.EBudget.Data
         // Shared SELECT used by both single-record lookup (by id) and
         // grouped lookup (by ors_no, for consolidated/multi-line ORS printing).
         private const string ObligationDetailSql = @"
-                SELECT  o.id, o.ors_no, o.line_no, COALESCE(o.lot_no, '') AS lot_no,
+                SELECT  o.id, o.ors_no, o.line_no,
                         DATE_FORMAT(o.ors_date,'%m/%d/%Y') AS ors_date,
                         o.payee, o.particulars, o.amount, o.status,
                         rc.code  AS rc_code,  rc.name  AS rc_name,
@@ -134,7 +134,6 @@ namespace BFAR.EBudget.Data
                 Id                = rdr.GetInt32(rdr.GetOrdinal("id")),
                 OrsNo             = rdr.GetValue(rdr.GetOrdinal("ors_no")).ToString() ?? "",
                 LineNo            = rdr.GetInt32(rdr.GetOrdinal("line_no")),
-                LotNo             = rdr.GetValue(rdr.GetOrdinal("lot_no")).ToString() ?? "",
                 OrsDate           = rdr.GetValue(rdr.GetOrdinal("ors_date")).ToString() ?? "",
                 Payee             = rdr.GetValue(rdr.GetOrdinal("payee")).ToString() ?? "",
                 Particulars       = rdr.GetValue(rdr.GetOrdinal("particulars")).ToString() ?? "",
@@ -212,14 +211,14 @@ namespace BFAR.EBudget.Data
         {
             const string sql = @"
                 INSERT INTO obligations
-                    (ors_no, line_no, lot_no, ors_date, payee, creditor_type, quarter,
+                    (ors_no, line_no, ors_date, payee, creditor_type, quarter,
                      rc_id, signatory_id, particulars,
                      activity_level_id, account_code_id, sub_account_code_id,
                      fund_id, fund_cluster, financing_source,
                      authorization_code, fund_category, full_funding_source,
                      amount, status, created_by)
                 VALUES
-                    (@ors_no, @line_no, @lot_no, @ors_date, @payee, @creditor_type, @quarter,
+                    (@ors_no, @line_no, @ors_date, @payee, @creditor_type, @quarter,
                      @rc_id, @signatory_id, @particulars,
                      @activity_level_id, @account_code_id, @sub_account_code_id,
                      @fund_id, @fund_cluster, @financing_source,
@@ -232,7 +231,6 @@ namespace BFAR.EBudget.Data
 
             cmd.Parameters.AddWithValue("@ors_no",             model.OrsNo);
             cmd.Parameters.AddWithValue("@line_no",            model.LineNo);
-            cmd.Parameters.AddWithValue("@lot_no",             string.IsNullOrWhiteSpace(model.LotNo) ? (object)DBNull.Value : model.LotNo);
             cmd.Parameters.AddWithValue("@ors_date",           model.OrsDate);
             cmd.Parameters.AddWithValue("@payee",              model.Payee);
             cmd.Parameters.AddWithValue("@creditor_type",      model.CreditorType);
@@ -311,7 +309,6 @@ namespace BFAR.EBudget.Data
                 SELECT  o.id,
                         o.ors_no,
                         o.line_no,
-                        COALESCE(o.lot_no, '')               AS lot_no,
                         DATE_FORMAT(o.ors_date, '%Y-%m-%d')  AS ors_date,
                         rc.name                              AS rc_name,
                         LEFT(o.particulars, 60)              AS particulars_short,
@@ -337,7 +334,6 @@ namespace BFAR.EBudget.Data
                     Id               = rdr.GetInt32(rdr.GetOrdinal("id")),
                     OrsNo            = rdr.GetValue(rdr.GetOrdinal("ors_no")).ToString()!,
                     LineNo           = rdr.GetInt32(rdr.GetOrdinal("line_no")),
-                    LotNo            = rdr.GetValue(rdr.GetOrdinal("lot_no")).ToString()!,
                     OrsDate          = rdr.GetValue(rdr.GetOrdinal("ors_date")).ToString()!,
                     RcName           = rdr.GetValue(rdr.GetOrdinal("rc_name")).ToString()!,
                     ParticularsShort = rdr.GetValue(rdr.GetOrdinal("particulars_short")).ToString()!,
@@ -370,7 +366,6 @@ namespace BFAR.EBudget.Data
         public int     Id                { get; set; }
         public string  OrsNo             { get; set; } = "";
         public int     LineNo            { get; set; } = 1;
-        public string  LotNo             { get; set; } = "";
         public string  OrsDate           { get; set; } = "";
         public string  Payee             { get; set; } = "";
         public string  Particulars       { get; set; } = "";
@@ -419,7 +414,6 @@ namespace BFAR.EBudget.Data
     {
         public string   OrsNo             { get; set; } = "";
         public int      LineNo            { get; set; } = 1;    // line within same ORS No.
-        public string?  LotNo             { get; set; }          // optional lot grouping
         public DateTime OrsDate           { get; set; }
         public string   Payee             { get; set; } = "";
         public string   CreditorType      { get; set; } = "Internal";
@@ -446,7 +440,6 @@ namespace BFAR.EBudget.Data
         public int     Id               { get; set; }
         public string  OrsNo            { get; set; } = "";
         public int     LineNo           { get; set; } = 1;
-        public string  LotNo            { get; set; } = "";
         public string  OrsDate          { get; set; } = "";
         public string  RcName           { get; set; } = "";
         public string  ParticularsShort { get; set; } = "";

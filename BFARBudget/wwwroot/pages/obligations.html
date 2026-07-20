@@ -74,17 +74,6 @@
               </div>
 
               <div class="field-group">
-                <label>Quarter <span class="req-mark">*</span></label>
-                <select id="ors-quarter">
-                  <option value="">— Select Quarter —</option>
-                  <option value="Q1">Q1 (Jan – Mar)</option>
-                  <option value="Q2">Q2 (Apr – Jun)</option>
-                  <option value="Q3">Q3 (Jul – Sep)</option>
-                  <option value="Q4">Q4 (Oct – Dec)</option>
-                </select>
-              </div>
-
-              <div class="field-group" style="flex:2">
                 <label>Payee / Supplier <span class="req-mark">*</span></label>
                 <input type="text" id="ors-payee" placeholder="Full name of payee or supplier" />
               </div>
@@ -97,6 +86,17 @@
                   <input type="radio" name="creditor" id="cr-external" value="External" />
                   <label for="cr-external">External</label>
                 </div>
+              </div>
+
+              <div class="field-group">
+                <label>Quarter <span class="req-mark">*</span></label>
+                <select id="ors-quarter">
+                  <option value="">— Select Quarter —</option>
+                  <option value="Q1">Q1 (Jan – Mar)</option>
+                  <option value="Q2">Q2 (Apr – Jun)</option>
+                  <option value="Q3">Q3 (Jul – Sep)</option>
+                  <option value="Q4">Q4 (Oct – Dec)</option>
+                </select>
               </div>
 
               <div class="field-group">
@@ -114,31 +114,14 @@
                 </select>
               </div>
 
-              <div class="field-group">
-                <label style="display:flex;align-items:center;justify-content:space-between;">
-                  <span>Consolidated ORS <span style="font-size:10px;color:var(--text-muted);font-weight:400">(same ORS No., multiple account codes)</span></span>
-                </label>
-                <label style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-md);background:#fff;cursor:pointer;">
-                  <input type="checkbox" id="consolidate-mode" onchange="toggleConsolidateMode()" style="cursor:pointer;width:16px;height:16px;" />
-                  <span style="font-size:13px;color:var(--text-secondary)">This ORS has multiple account codes</span>
-                </label>
-              </div>
-
-              <!-- Consolidate info banner -->
-              <div id="consolidate-banner" style="display:none;grid-column:1/-1;background:#e0f7fa;border:1px solid var(--accent);border-radius:var(--radius-md);padding:8px 14px;font-size:12px;color:var(--accent-dark);">
-                <strong>Consolidated ORS Mode ON</strong> — The same ORS No. will be reused for each account code line.
-                Next: <span id="consolidate-line-preview">Line 2</span>.
-                Uncheck when you are done adding all account codes for this ORS.
-              </div>
-
             </div>
 
             <div class="field-group">
               <label>Particulars <span class="req-mark">*</span></label>
               <textarea id="ors-particulars" rows="4"
-                placeholder="Describe the nature of this obligation in detail (minimum 500 characters)..."
+                placeholder="Describe the nature of this obligation in detail..."
                 oninput="updateCharCount()"></textarea>
-              <div class="char-counter" id="char-counter">0 / 500 minimum</div>
+              <div class="char-counter" id="char-counter">0 characters</div>
             </div>
 
           </div>
@@ -301,10 +284,8 @@
             <thead>
               <tr>
                 <th style="text-align:left">ORS No.</th>
-                <th style="text-align:center">Line</th>
                 <th style="text-align:left">Date</th>
-                <th style="text-align:left">RC</th>
-                <th style="text-align:left">Account Code</th>
+                <th style="text-align:left">Responsibility Center</th>
                 <th style="text-align:left">Particulars</th>
                 <th style="text-align:right">Amount (₱)</th>
                 <th style="text-align:center">Status</th>

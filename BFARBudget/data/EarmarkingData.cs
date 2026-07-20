@@ -202,7 +202,7 @@ namespace BFAR.EBudget.Data
             if (!rdr.Read()) return null;
             return new FundDetail
             {
-                Id                = rdr.GetInt32("id"),
+                //Id                = rdr.GetInt32("id"),
                 FundCluster       = rdr.GetString("fund_cluster"),
                 FinancingSource   = rdr.GetString("financing_source"),
                 AuthorizationCode = rdr.GetString("authorization_code"),

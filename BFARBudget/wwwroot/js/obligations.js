@@ -327,7 +327,6 @@ function saveORS() {
   const model = {
     orsNo:            orsNo,
     lineNo:           0,             // 0 = auto-assign on backend
-    lotNo:            null,          // Lot grouping is for Earmarking only
     orsDate:          get('ors-date')?.value,
     payee:            get('ors-payee')?.value.trim(),
     creditorType:     creditorEl?.value || 'Internal',
@@ -371,7 +370,7 @@ function saveORS() {
 
     if (isConsolidate) {
       // Consolidated mode — keep ORS No, date, payee, RC, signatory, fund
-      // Only clear account code, activity level, amount, lot no
+      // Only clear account code, activity level, amount
       const keepFields = ['ors-no','ors-date','ors-payee','ors-quarter',
                           'ors-rc','ors-signatory','ors-fund-cat','ors-particulars'];
       const clearFields = ['ors-acct','ors-subacct','ors-amount'];
@@ -439,7 +438,7 @@ function loadObligationsTable() {
               <td style="text-align:center"><span class="badge ${statusBadge(r.status)}">${esc(r.status)}</span></td>
               <td style="text-align:center;white-space:nowrap;display:flex;gap:5px;justify-content:center;">
                 <button class="btn btn-sm" style="background:#007b8a;color:#fff;border-color:#007b8a;"
-                  onclick="printORS(${r.id})" title="Print ORS Form">
+                  onclick="printORS('${esc(r.orsNo)}')" title="Print ORS Form">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                   Print
                 </button>
@@ -491,7 +490,7 @@ function updateConsolidateLinePreview(orsNo) {
     })
     .catch(() => {});
 }
-function printORS(id) {
+function printORS(orsNo) {
   window.open('/pages/ors_print.html?ors=' + encodeURIComponent(orsNo), '_blank');
 }
 
@@ -536,12 +535,6 @@ function clearORS() {
 
   const internal = document.getElementById('cr-internal');
   if (internal) internal.checked = true;
-
-  // Reset consolidate mode
-  const consMode = document.getElementById('consolidate-mode');
-  if (consMode) consMode.checked = false;
-  const consBanner = document.getElementById('consolidate-banner');
-  if (consBanner) consBanner.style.display = 'none';
 
   const hint = document.getElementById('char-counter');
   if (hint) { hint.textContent = '0 characters'; hint.className = 'char-counter'; }
