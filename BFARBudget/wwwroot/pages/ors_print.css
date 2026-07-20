@@ -2,7 +2,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: Arial Narrow, Helvetica, sans-serif;
+      font-family: Arial, Helvetica, sans-serif;
       font-size: 9pt;
       background: #e0e0e0;
       padding: 18px;
@@ -19,7 +19,7 @@
     }
 
     #toolbar-title {
-      font-size: 16px;
+      font-size: 13px;
       font-weight: 600;
       color: #555;
     }
@@ -38,17 +38,39 @@
     .tbtn:hover  { filter: brightness(1.08); }
     .tbtn:active { filter: brightness(0.95); }
 
-    .tbtn-back  { background: #ca4242;    color: #f1f1f1; border: 1px solid #bbb; }
-    .tbtn-print { background: #00af75; color: #ffffff; }
+    .tbtn-back  { background: #fff;    color: #333; border: 1px solid #bbb; }
+    .tbtn-print { background: #0070c0; color: #fff; }
 
-    #ors-paper {
+    #papers-root {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Each ORS "paper" is one physical printed sheet (8.5in x 13in).
+       A single ORS number can produce several of these when obligations
+       are consolidated across RCs and/or account codes. */
+    .ors-paper {
       width: 8.5in;
       min-height: 13in;
       background: #fff;
-      margin: 0 auto;
+      margin: 0 0 24px;
       padding: 3mm 5mm 5mm;
       box-shadow: 0 0 22px #0006;
       color: #000;
+      position: relative;
+    }
+
+    /* While the pagination algorithm is deciding what fits, min-height
+       must NOT apply — otherwise an empty/near-empty paper already
+       measures as a full 13in and every fit-check trivially fails. */
+    .ors-paper.measuring { min-height: 0; }
+
+    .page-tag {
+      position: absolute;
+      top: 4px; right: 8px;
+      font-size: 7pt;
+      color: #999;
     }
 
     /* ── Agency Header ── */
@@ -59,8 +81,8 @@
     }
 
     .logo-wrap {
-      width: 70px;
-      height: 70px;
+      width: 58px;
+      height: 58px;
       flex-shrink: 0;
       margin-right: 9px;
     }
@@ -101,11 +123,12 @@
       font-size: 8pt;
       margin: 4px 0 10px;
     }
-    .date-row .date-ul {
-      border: none; border-bottom: 1px solid #444;
-      font-size: 8pt; font-family: Arial Narrow, Helvetica, sans-serif, sans-serif;
-      width: 95px; text-align: center;
-      outline: none; padding-bottom: 1px; margin-left: 4px;
+    .date-row .date-value {
+      display: inline-block;
+      border-bottom: 1px solid #444;
+      min-width: 95px;
+      text-align: center;
+      padding-bottom: 1px; margin-left: 4px;
     }
 
     /* ── ORS / Payee Info ── */
@@ -119,10 +142,10 @@
       font-size: 9pt;
     }
     .info-tbl .lbl { font-weight: bold; white-space: nowrap; }
-    .info-tbl .val input {
-      border: none; outline: none;
-      font-size: 10pt; font-family: Arial Narrow, sans-serif; font-weight: bold;
-      width: 235px;
+    .info-tbl .val-text {
+      font-size: 9pt; font-family: Arial, sans-serif; font-weight: bold;
+      display: inline-block;
+      min-width: 235px;
     }
 
     /* ── Main Table ── */
@@ -130,18 +153,18 @@
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-    } 
+    }
 
-    .main-tbl colgroup col:nth-child(1) { width: 15.5%; }
-    .main-tbl colgroup col:nth-child(2) { width: 26%;   }
-    .main-tbl colgroup col:nth-child(3) { width: 43%;   }
-    .main-tbl colgroup col:nth-child(4) { width: 15.5%; } 
+    .main-tbl colgroup col:nth-child(1) { width: 13%;   }
+    .main-tbl colgroup col:nth-child(2) { width: 29%;   }
+    .main-tbl colgroup col:nth-child(3) { width: 42.5%; }
+    .main-tbl colgroup col:nth-child(4) { width: 15.5%; }
 
     .main-tbl th {
       background: #9b9b9b;
       border: 1px solid #333;
       text-align: center;
-      padding: 0px 4px;
+      padding: 3px 4px;
       font-size: 8pt; font-weight: bold;
       vertical-align: middle;
     }
@@ -153,19 +176,25 @@
       vertical-align: top;
     }
 
-    .cell-rc textarea, .cell-parts textarea {
-      width: 100%;
-      min-height: 215px;
-      border: none; outline: none;
-      resize: none;
-      font-family: Arial Narrow, sans-serif;
+    /* ── Responsibility Center / Particulars row-lists ──
+       Same "parallel list" pattern as fund-list / amount-list: one row
+       slot per underlying fund-line, but the RC/Particulars text is only
+       shown on the first slot of a group and left blank afterward, which
+       visually reads as a merged cell spanning that group's rows. */
+    .rc-list, .parts-list { width: 100%; }
+
+    .rc-row, .parts-row {
+      min-height: 17px;
+      margin-bottom: 1.5px;
       font-size: 8pt; font-weight: bold;
-      background: transparent;
-      line-height: 1.45;
+      font-family: Arial, sans-serif;
+      line-height: 1.4;
+      padding: 0 2px;
+      word-break: break-word;
     }
 
     /* ── Fund Category List ── */
-    #fund-list { width: 100%; }
+    .fund-list { width: 100%; }
 
     .fi {
       display: flex;
@@ -183,18 +212,16 @@
 
     .fi-desc {
       flex: 1;
-      outline: none;
       font-size: 8pt; font-weight: bold;
-      font-family: Arial Narrow, sans-serif;
+      font-family: Arial, sans-serif;
       line-height: 1.4;
       word-break: break-word;
       min-height: 17px;
       padding: 0 2px;
     }
-    .fi-desc:focus { background: #f0f7ff; border-radius: 2px; }
 
     /* ── Per-row Amount column (parallel to fund-list) ── */
-    #amount-list { width: 100%; }
+    .amount-list { width: 100%; }
 
     .amt-row {
       display: flex;
@@ -206,7 +233,7 @@
     .amt-php-label {
       flex-shrink: 0;
       font-size: 8pt;
-      font-family: Arial Narrow, sans-serif;
+      font-family: Arial, sans-serif;
       line-height: 1.4;
       padding: 0 2px;
       user-select: none;
@@ -214,57 +241,13 @@
 
     .fi-amt {
       flex: 1;
-      outline: none;
       font-size: 8pt;
-      font-family: Arial Narrow, sans-serif;
+      font-family: Arial, sans-serif;
       text-align: right;
       line-height: 1.4;
       min-height: 17px;
       padding: 0 2px;
     }
-    .fi-amt:focus { background: #f0f7ff; border-radius: 2px; }
-
-    /* hover controls */
-    .fi-ctrl {
-      display: none;
-      position: absolute;
-      top: -2px;
-      right: 0;
-      align-items: center;
-      gap: 2px;
-      padding: 1px 3px;
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 3px;
-      box-shadow: 0 1px 5px rgba(0,0,0,.18);
-      z-index: 5;
-    }
-    .fi:hover .fi-ctrl { display: flex; }
-
-    .fi-ctrl button {
-      border: none;
-      border-radius: 2px;
-      cursor: pointer;
-      font-size: 10px;
-      padding: 1px 3px;
-      line-height: 1.2;
-      background: #e0e0e0;
-      color: #333;
-    }
-    .fi-ctrl .del-btn { background: #ffcdd2; color: #c62828; }
-
-    /* Color dot */
-    .fi-color-dot {
-      width: 9px; height: 9px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      cursor: pointer;
-      margin-top: 4px;
-      margin-right: 3px;
-      border: 1px solid #bbb;
-      visibility: hidden;
-    }
-    .fi:hover .fi-color-dot { visibility: visible; }
 
     /* ── Total Row ── */
     .total-row td {
@@ -273,7 +256,6 @@
       font-weight: bold;
       font-size: 8pt;
     }
-    .total-row .td-php { text-align: right; }
     .total-row .td-grand {
       text-align: right;
       display: flex;
@@ -283,13 +265,11 @@
       flex-shrink: 0;
       margin-right: 6px;
     }
-    .total-row .td-grand input {
+    .total-row .td-grand-value {
       flex: 1;
-      border: none; outline: none;
       font-size: 8pt; font-weight: bold;
-      font-family: Arial Narrow, sans-serif;
-      text-align: right; width: 100%;
-      background: transparent;
+      font-family: Arial, sans-serif;
+      text-align: right;
     }
 
     /* ── Certification ── */
@@ -333,16 +313,16 @@
     .sig-name, .sig-pos { text-align: center; }
     .sig-name input {
       border: none; outline: none;
-      font-size: 10pt; font-weight: bold;
+      font-size: 9pt; font-weight: bold;
       color: #2e2e2e;
-      font-family: Arial Narrow, sans-serif;
+      font-family: Arial, sans-serif;
       text-align: center; width: 100%;
       background: transparent;
     }
     .sig-pos input {
       border: none; outline: none;
       font-size: 8.5pt; color: #2e2e2e;
-      font-family: Arial Narrow, sans-serif;
+      font-family: Arial, sans-serif;
       text-align: center; width: 100%;
       background: transparent;
     }
@@ -357,12 +337,22 @@
     @media print {
       body { background: #fff; padding: 0; }
       #toolbar { display: none !important; }
-      .fi-ctrl, .fi-color-dot { display: none !important; }
-      #ors-paper {
+      .page-tag { display: none !important; }
+
+      #papers-root { display: block; }
+
+      .ors-paper {
         box-shadow: none;
         width: 8.5in; min-height: 13in; margin: 0;
         padding: 3mm 4mm;
+        break-after: page;
+        page-break-after: always;
       }
+      .ors-paper:last-child {
+        break-after: auto;
+        page-break-after: auto;
+      }
+
       * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;

@@ -68,7 +68,7 @@
   /* ── Page metadata ── */
   var PAGE_META = {
     'index.html':       { page: 'dashboard',   title: 'Dashboard',      sub: 'Bureau of Fisheries and Aquatic Resources' },
-    'obligations.html': { page: 'obligations', title: 'Obligations',    sub: 'Obligation Request Slip (ORS) / Budget Utilization Request Slip (BURS)' },
+    'obligations.html': { page: 'obligations', title: 'Obligations',    sub: 'Obligation Request Status (ORS) / Budget Utilization Request Status (BURS)' },
     'earmarking.html':  { page: 'earmarking',  title: 'Earmarking',     sub: 'Reserve allotment for specific purposes before obligation' },
     'reports.html':     { page: 'reports',     title: 'Budget Reports', sub: 'Statement of Allotment, Obligations, Disbursements and Balances' },
     'manage.html':      { page: 'manage',      title: 'Manage Data',    sub: 'Administrator — Responsibility Centers, Fund Categories, Account Codes, Programs' },

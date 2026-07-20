@@ -65,8 +65,16 @@
                 <input type="date" id="em-date" />
               </div>
 
-
-
+              <div class="field-group">
+                <label>Quarter <span class="req-mark">*</span></label>
+                <select id="em-quarter">
+                  <option value="">— Select Quarter —</option>
+                  <option value="Q1">Q1 (Jan – Mar)</option>
+                  <option value="Q2">Q2 (Apr – Jun)</option>
+                  <option value="Q3">Q3 (Jul – Sep)</option>
+                  <option value="Q4">Q4 (Oct – Dec)</option>
+                </select>
+              </div>
 
               <div class="field-group">
                 <label>Responsibility Center <span class="req-mark">*</span></label>
@@ -81,6 +89,22 @@
                 <select id="em-signatory" disabled>
                   <option value="">— Select RC first —</option>
                 </select>
+              </div>
+
+              <div class="field-group">
+                <label>Lot No. <span style="font-size:10px;color:var(--text-muted);font-weight:400">(optional — for lot-based PRs)</span></label>
+                <input type="text" id="em-lot-no" placeholder="e.g. Lot 1, Lot 2" />
+              </div>
+
+              <div class="field-group">
+                <label style="display:flex;align-items:center;gap:6px;">
+                  <input type="checkbox" id="em-consolidate-mode" onchange="toggleEmConsolidateMode()" style="cursor:pointer;width:15px;height:15px;" />
+                  <span>Consolidated PR <span style="font-size:10px;color:var(--text-muted);font-weight:400">(same PR No., multiple account codes)</span></span>
+                </label>
+                <div id="em-consolidate-banner" style="display:none;margin-top:6px;background:#e0f7fa;border:1px solid var(--accent);border-radius:var(--radius-md);padding:8px 12px;font-size:12px;color:var(--accent-dark);">
+                  <strong>Consolidated PR Mode ON</strong> — Same PR No. reused per account code.
+                  Next: <span id="em-consolidate-line-preview">Line 2</span>.
+                </div>
               </div>
 
             </div>
@@ -113,7 +137,7 @@
               <div class="field-group">
                 <label>Program / Project <span class="req-mark">*</span></label>
                 <select id="em-program"
-                  onchange="emCascade('em-program', '/api/dropdown/project-categories', 'em-projcat', '— Select Category —')">
+                  onchange="onEmProgramChange()">
                   <option value="">— Select Program —</option>
                 </select>
               </div>
@@ -121,7 +145,7 @@
               <div class="field-group">
                 <label>Project Category <span class="req-mark">*</span></label>
                 <select id="em-projcat" disabled
-                  onchange="emCascade('em-projcat', '/api/dropdown/project-sub-categories', 'em-projsubcat', '— Select Sub-Category —')">
+                  onchange="onEmProjCatChange()">
                   <option value="">— Select Program first —</option>
                 </select>
               </div>
